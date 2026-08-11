@@ -47,6 +47,11 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+function formatDateTime(dateStr) {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
 function SkeletonCard() {
   return (
     <div className="card p-4 flex flex-col gap-3">
@@ -62,10 +67,69 @@ function SkeletonCard() {
   )
 }
 
-function TransactionCard({ tx, onEdit }) {
+function EditHistoryPopover({ history }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="relative">
+      <button
+        className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-blue-600 transition-colors"
+        onClick={() => setOpen(o => !o)}
+        title="View edit history"
+      >
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Edited
+      </button>
+      {open && (
+        <div className="absolute right-0 top-7 z-50 w-72 card shadow-xl border border-slate-200 p-4 space-y-3">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Edit History</p>
+            <button className="text-slate-400 hover:text-slate-600" onClick={() => setOpen(false)}>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          {history.length === 0 && (
+            <p className="text-xs text-slate-400">No edit history</p>
+          )}
+          {[...history].reverse().map(h => (
+            <div key={h.id} className="text-xs space-y-1 pb-3 border-b border-slate-100 last:border-0 last:pb-0">
+              <p className="text-slate-400">{formatDateTime(h.edited_at)}</p>
+              <div className="space-y-0.5">
+                {h.old_amount !== h.new_amount && (
+                  <p className="text-slate-700">
+                    Amount: <span className="line-through text-red-500">৳{formatCurrency(h.old_amount)}</span>
+                    {' → '}
+                    <span className="text-emerald-600 font-medium">৳{formatCurrency(h.new_amount)}</span>
+                  </p>
+                )}
+                {h.old_note !== h.new_note && (
+                  <p className="text-slate-700">
+                    Note: <span className="line-through">{h.old_note || '—'}</span>
+                    {' → '}
+                    <span className="font-medium">{h.new_note || '—'}</span>
+                  </p>
+                )}
+                {h.old_amount === h.new_amount && h.old_note === h.new_note && (
+                  <p className="text-slate-400 italic">No visible changes recorded</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TransactionCard({ tx, onEdit, editHistory }) {
   const cfg = TX_TYPE_CONFIG[tx.type] || { label: tx.type, dot: 'bg-slate-400', bg: 'bg-slate-50 text-slate-600 border-slate-100', direction: 'out' }
   const isIn = cfg.direction === 'in'
   const canEdit = MANUAL_TYPES.includes(tx.type)
+  const history = editHistory[tx.id] || []
 
   return (
     <div className="card p-4 flex flex-col gap-3 border border-slate-200 hover:border-slate-300 transition-colors">
@@ -78,9 +142,9 @@ function TransactionCard({ tx, onEdit }) {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {canEdit && onEdit && (
+          {canEdit && (
             <button
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              className="btn btn-sm text-slate-500 border border-slate-200 hover:bg-slate-50 hover:border-slate-300"
               onClick={() => onEdit(tx)}
               title="Edit"
             >
@@ -88,6 +152,7 @@ function TransactionCard({ tx, onEdit }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
               </svg>
+              Edit
             </button>
           )}
           <p className={`text-lg font-bold ${isIn ? 'text-emerald-600' : 'text-red-600'}`}>
@@ -101,16 +166,16 @@ function TransactionCard({ tx, onEdit }) {
         <p className="text-sm text-slate-600">{tx.note}</p>
       )}
 
-      {/* Date */}
+      {/* Footer: Date + Edit history */}
       <div className="flex items-center justify-between pt-1 border-t border-slate-100 mt-auto">
         <p className="text-xs text-slate-400">{formatDate(tx.transaction_date)}</p>
+        {history.length > 0 && <EditHistoryPopover history={history} />}
       </div>
     </div>
   )
 }
 
 function TransactionForm({ tx, onSuccess, onCancel }) {
-  // tx is null for add mode, or an object for edit mode
   const isEdit = !!tx
   const [txType, setTxType] = useState(tx?.type || 'investment')
   const [amount, setAmount] = useState(tx ? String(tx.amount) : '')
@@ -147,6 +212,15 @@ function TransactionForm({ tx, onSuccess, onCancel }) {
 
     let error
     if (isEdit) {
+      // Log edit before updating
+      await supabase.from('cash_transaction_edits').insert({
+        transaction_id: tx.id,
+        old_amount: tx.amount,
+        new_amount: Number(amount),
+        old_note: tx.note || null,
+        new_note: note.trim() || null,
+      })
+
       const { error: err } = await supabase
         .from('cash_transactions')
         .update(payload)
@@ -260,11 +334,12 @@ function TransactionForm({ tx, onSuccess, onCancel }) {
 
 export default function CashBook() {
   const [transactions, setTransactions] = useState([])
+  const [editHistory, setEditHistory] = useState({}) // keyed by transaction_id
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [directionFilter, setDirectionFilter] = useState('all')
   const [showModal, setShowModal] = useState(false)
-  const [editingTx, setEditingTx] = useState(null) // null = add mode, object = edit mode
+  const [editingTx, setEditingTx] = useState(null)
   const [toast, setToast] = useState(null)
 
   const showToast = useCallback((msg, type = 'success') => {
@@ -282,6 +357,28 @@ export default function CashBook() {
 
     if (error) console.error('CashBook fetch error:', error)
     setTransactions(data || [])
+
+    // Fetch edit history for manual transactions
+    if (data && data.length > 0) {
+      const manualIds = data.filter(t => MANUAL_TYPES.includes(t.type)).map(t => t.id)
+      if (manualIds.length > 0) {
+        const { data: history } = await supabase
+          .from('cash_transaction_edits')
+          .select('*')
+          .in('transaction_id', manualIds)
+          .order('edited_at', { ascending: false })
+
+        if (history) {
+          const keyed = {}
+          history.forEach(h => {
+            if (!keyed[h.transaction_id]) keyed[h.transaction_id] = []
+            keyed[h.transaction_id].push(h)
+          })
+          setEditHistory(keyed)
+        }
+      }
+    }
+
     setLoading(false)
   }
 
@@ -436,7 +533,12 @@ export default function CashBook() {
         )}
 
         {!loading && filtered.map(tx => (
-          <TransactionCard key={tx.id} tx={tx} onEdit={openEditModal} />
+          <TransactionCard
+            key={tx.id}
+            tx={tx}
+            onEdit={openEditModal}
+            editHistory={editHistory}
+          />
         ))}
       </div>
 
