@@ -191,7 +191,6 @@ export default function BakiLedger() {
         remaining,
         status,
         last_payment_date,
-        created_at,
         sale:sales(
           id,
           buyer_name,
@@ -210,7 +209,7 @@ export default function BakiLedger() {
           note
         )
       `)
-      .order('created_at', { ascending: false })
+      .order('last_payment_date', { ascending: false })
 
     if (error) {
       console.error('BakiLedger fetch error:', JSON.stringify(error))
@@ -219,7 +218,7 @@ export default function BakiLedger() {
       const { data: fallback } = await supabase
         .from('credits')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('last_payment_date', { ascending: false })
       setCredits(fallback || [])
     } else {
       setCredits(data || [])
