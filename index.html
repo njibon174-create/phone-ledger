@@ -8,11 +8,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- jsPDF + jspdf-autotable for PDF export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-    <!-- SheetJS xlsx for Excel export (official CDN for browser writeFile support) -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <!-- jsPDF (UMD) - exposes window.jspdf -->
+    <script src="/vendor/jspdf.umd.min.js"></script>
+    <!-- jsPDF-AutoTable plugin - attaches to jsPDF.prototype.autoTable -->
+    <script src="/vendor/jspdf.plugin.autotable.min.js"></script>
+    <!-- SheetJS xlsx - exposes window.XLSX -->
+    <script src="/vendor/xlsx.full.min.js"></script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,15 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
-// jsPDF + jspdf-autotable loaded from CDN as window.jspdf
-// jspdf.UMD() exposes: window.jspdf = { jsPDF: Class, autoTable: function }
-// SheetJS xlsx loaded from CDN as window.XLSX
+// jsPDF + jspdf-autotable loaded from local /vendor/*.js as window.jspdf
+// jspdf UMD exposes: window.jspdf = { jsPDF: Class, ... }
+// jspdf-autotable plugin auto-attaches to window.jspdf.jsPDF if loaded after jspdf
+// SheetJS xlsx loaded from local /vendor/xlsx.full.min.js as window.XLSX
 function getJsPDF() {
   return window.jspdf?.jsPDF
 }
 function getAutoTable() {
-  // The autotable plugin attaches to jspdf AND exports a global autoTable
-  return window.jspdf?.autoTable || window.autoTable
+  // The plugin should attach to jspdf instances via applyPlugin at load time.
+  // We also expose window.autoTable as a fallback.
+  return window.autoTable
 }
 function getXLSX() {
   return window.XLSX
@@ -129,12 +131,12 @@ export default function Reports() {
     setExporting('pdf')
     try {
       const jsPDF = getJsPDF()
-      const autoTable = getAutoTable()
+      // Verify the plugin attached to jsPDF.prototype
       if (!jsPDF) {
-        throw new Error('jsPDF not loaded. Check your internet connection and refresh the page.')
+        throw new Error('jsPDF not loaded. Try refreshing the page.')
       }
-      if (!autoTable) {
-        throw new Error('jsPDF-AutoTable plugin not loaded. Check your internet connection and refresh the page.')
+      if (typeof jsPDF.prototype.autoTable !== 'function') {
+        throw new Error('jsPDF-AutoTable plugin not attached. Try refreshing the page.')
       }
 
       const { monthLabel, generatedAt, current, prev } = buildExportPayload()
@@ -174,7 +176,7 @@ export default function Reports() {
       doc.setFont('helvetica', 'bold')
       doc.text('Sales Summary', margin, y)
       y += 8
-      autoTable(doc, {
+      doc.autoTable({
         startY: y,
         head: [['Metric', 'This Month', 'Prev Month', 'Change']],
         body: [
@@ -201,7 +203,7 @@ export default function Reports() {
         const brandRows = Object.entries(cs.brandBreakdown)
           .sort(([, a], [, b]) => b.amount - a.amount)
           .map(([brand, data]) => [brand, String(data.count), formatCurrency(data.amount)])
-        autoTable(doc, {
+        doc.autoTable({
           startY: y,
           head: [['Brand', 'Count', 'Amount']],
           body: brandRows,
@@ -220,7 +222,7 @@ export default function Reports() {
       doc.setFont('helvetica', 'bold')
       doc.text('Baki / Credit Summary', margin, y)
       y += 8
-      autoTable(doc, {
+      doc.autoTable({
         startY: y,
         head: [['Metric', 'Value']],
         body: [
@@ -242,7 +244,7 @@ export default function Reports() {
       doc.setFont('helvetica', 'bold')
       doc.text('Cash Summary', margin, y)
       y += 8
-      autoTable(doc, {
+      doc.autoTable({
         startY: y,
         head: [['Metric', 'This Month', 'Prev Month', 'Change']],
         body: [
@@ -266,7 +268,7 @@ export default function Reports() {
       doc.setFont('helvetica', 'bold')
       doc.text('Profit & Loss', margin, y)
       y += 8
-      autoTable(doc, {
+      doc.autoTable({
         startY: y,
         head: [['Metric', 'This Month', 'Prev Month', 'Change']],
         body: [
@@ -310,7 +312,7 @@ export default function Reports() {
     try {
       const XLSX = getXLSX()
       if (!XLSX) {
-        throw new Error('XLSX library not loaded. Check your internet connection and refresh the page.')
+        throw new Error('XLSX library not loaded. Try refreshing the page.')
       }
 
       const { monthLabel, generatedAt, current, prev } = buildExportPayload()
@@ -325,7 +327,6 @@ export default function Reports() {
 
       const wb = XLSX.utils.book_new()
 
-      // Summary sheet
       const summaryRows = [
         ['PhoneLedger - Monthly Report'],
         [monthLabel],
@@ -357,7 +358,6 @@ export default function Reports() {
       ]
       XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary')
 
-      // Brand Breakdown sheet
       if (cs.brandBreakdown && Object.keys(cs.brandBreakdown).length > 0) {
         const brandRows = [['Brand', 'Count', 'Amount']]
         Object.entries(cs.brandBreakdown)
@@ -389,19 +389,8 @@ export default function Reports() {
     }
   }
 
-  function pctChange(current, previous) {
-    if (previous === null || previous === undefined) return '—'
-    if (previous === 0) return current > 0 ? '+100%' : '0%'
-    const change = ((current - previous) / previous) * 100
-    const sign = change > 0 ? '+' : ''
-    return `${sign}${change.toFixed(1)}%`
-  }
-
   async function fetchMonthData(year, month) {
     const { start, end } = getMonthRange(year, month)
-    const prevMonth = month === 0 ? 11 : month - 1
-    const prevYear = month === 0 ? year - 1 : year
-    const { start: pStart, end: pEnd } = getMonthRange(prevYear, prevMonth)
 
     const { data: allSales } = await supabase
       .from('sales')
@@ -581,7 +570,6 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      {/* Export error banner */}
       {exportError && (
         <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 flex items-start justify-between gap-3">
           <div>
@@ -592,7 +580,6 @@ export default function Reports() {
         </div>
       )}
 
-      {/* Month Navigator */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <button className="btn-secondary btn-sm" onClick={prevMonth}>
@@ -662,7 +649,6 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Sales */}
       <SectionCard title="📊 Sales">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
           <StatCard label="Phones Sold" value={s.count || 0} />
@@ -691,7 +677,6 @@ export default function Reports() {
         )}
       </SectionCard>
 
-      {/* Baki */}
       <SectionCard title="🧾 Baki / Credit">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <StatCard label="New Baki Created" value={b.newBakiCount || 0} sub={`৳${formatCurrency(b.newBakiAmount)}`} color="text-amber-600" />
@@ -700,7 +685,6 @@ export default function Reports() {
         </div>
       </SectionCard>
 
-      {/* Cash Flow */}
       <SectionCard title="💰 Cash Flow">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           <StatCard label="Investment" value={`৳${formatCurrency(c.investment)}`} color="text-blue-600" />
@@ -718,7 +702,6 @@ export default function Reports() {
         </div>
       </SectionCard>
 
-      {/* Profit / Loss */}
       <div className="card p-5 border-2 border-slate-900">
         <h3 className="text-sm font-semibold text-slate-700 mb-4 uppercase tracking-wide">📈 Profit & Loss</h3>
         <div className="grid grid-cols-3 gap-4 mb-4">
@@ -744,7 +727,6 @@ export default function Reports() {
         </p>
       </div>
 
-      {/* vs Last Month */}
       <SectionCard title="↔️ vs Last Month">
         <div className="space-y-0">
           <ComparisonRow label="Total Sales Amount" current={s.amount} previous={ps.amount} />
