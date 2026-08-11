@@ -120,6 +120,7 @@ export default function Reports() {
   const [currentData, setCurrentData] = useState(null)
   const [prevData, setPrevData] = useState(null)
   const [exporting, setExporting] = useState(null) // 'pdf' | 'xlsx' | null
+  const [exportError, setExportError] = useState(null)
 
   // ── Export helpers ─────────────────────────────────────────────────
   function buildExportPayload() {
