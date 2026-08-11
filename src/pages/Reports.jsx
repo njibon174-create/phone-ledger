@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
-// jsPDF + jspdf-autotable loaded from CDN as window.jspdf + window.autoTable
+// jsPDF + jspdf-autotable loaded from CDN as window.jspdf
+// jspdf.UMD() exposes: window.jspdf = { jsPDF: Class, autoTable: function }
 // SheetJS xlsx loaded from CDN as window.XLSX
 function getJsPDF() {
-  return window.jspdf?.jsPDF || window.jsPDF
+  return window.jspdf?.jsPDF
 }
 function getAutoTable() {
-  return window.autoTable
+  // The autotable plugin attaches to jspdf AND exports a global autoTable
+  return window.jspdf?.autoTable || window.autoTable
 }
 function getXLSX() {
   return window.XLSX
@@ -33,7 +35,6 @@ function pctChange(current, previous) {
 }
 
 function getMonthRange(year, month) {
-  // month is 0-indexed
   const start = `${year}-${String(month + 1).padStart(2, '0')}-01`
   const lastDay = new Date(year, month + 1, 0).getDate()
   const end = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
@@ -78,9 +79,6 @@ function ComparisonRow({ label, current, previous, isCurrency = true, invertColo
   const isPositive = current > previous
   const isNeutral = current === previous
 
-  // For profit/loss and outstanding, up = good (green)
-  // For expenses/withdrawals, down = good (red means lower which is better)
-  // For outstanding baki, lower = better
   const arrowColor = isNeutral ? 'text-slate-400' : invertColors
     ? (isPositive ? 'text-red-600' : 'text-emerald-600')
     : (isPositive ? 'text-emerald-600' : 'text-red-600')
@@ -115,31 +113,31 @@ function ComparisonRow({ label, current, previous, isCurrency = true, invertColo
 export default function Reports() {
   const now = new Date()
   const [selectedYear, setSelectedYear] = useState(now.getFullYear())
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth()) // 0-indexed
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
   const [loading, setLoading] = useState(true)
   const [currentData, setCurrentData] = useState(null)
   const [prevData, setPrevData] = useState(null)
-  const [exporting, setExporting] = useState(null) // 'pdf' | 'xlsx' | null
+  const [exporting, setExporting] = useState(null)
   const [exportError, setExportError] = useState(null)
 
-  // ── Export helpers ─────────────────────────────────────────────────
-  function buildExportPayload() {
-    return {
-      monthLabel,
-      monthIndex: selectedMonth,
-      year: selectedYear,
-      generatedAt: new Date(),
-      current: currentData,
-      prev: prevData,
-    }
-  }
-
   function exportPDF() {
-    if (!currentData) return
+    if (!currentData) {
+      setExportError('Report data not loaded yet. Please wait for the page to finish loading.')
+      return
+    }
+    setExportError(null)
     setExporting('pdf')
     try {
-      const payload = buildExportPayload()
-      const { monthLabel, generatedAt, current, prev } = payload
+      const jsPDF = getJsPDF()
+      const autoTable = getAutoTable()
+      if (!jsPDF) {
+        throw new Error('jsPDF not loaded. Check your internet connection and refresh the page.')
+      }
+      if (!autoTable) {
+        throw new Error('jsPDF-AutoTable plugin not loaded. Check your internet connection and refresh the page.')
+      }
+
+      const { monthLabel, generatedAt, current, prev } = buildExportPayload()
       const cs = current.sales || {}
       const cb = current.baki || {}
       const cc = current.cash || {}
@@ -149,23 +147,19 @@ export default function Reports() {
       const pc = prev.cash || {}
       const pp = prev.profit || {}
 
-      const jsPDF = getJsPDF()
-      const autoTable = getAutoTable()
-      if (!jsPDF || !autoTable) {
-        throw new Error('PDF libraries not loaded. Please check your internet connection and refresh the page.')
-      }
       const doc = new jsPDF({ unit: 'pt', format: 'a4' })
       const pageW = doc.internal.pageSize.getWidth()
+      const pageH = doc.internal.pageSize.getHeight()
       const margin = 40
       let y = 40
 
-      // ── Header ──
+      // Header
       doc.setFillColor(15, 23, 42)
       doc.rect(0, 0, pageW, 70, 'F')
       doc.setTextColor(255, 255, 255)
       doc.setFontSize(18)
       doc.setFont('helvetica', 'bold')
-      doc.text('PhoneLedger — Monthly Report', margin, 35)
+      doc.text('PhoneLedger - Monthly Report', margin, 35)
       doc.setFontSize(11)
       doc.setFont('helvetica', 'normal')
       doc.text(monthLabel, margin, 55)
@@ -175,37 +169,38 @@ export default function Reports() {
       y = 100
       doc.setTextColor(15, 23, 42)
 
-      // ── Sales Summary ──
+      // Sales Summary
       doc.setFontSize(13)
       doc.setFont('helvetica', 'bold')
       doc.text('Sales Summary', margin, y)
       y += 8
-
       autoTable(doc, {
         startY: y,
         head: [['Metric', 'This Month', 'Prev Month', 'Change']],
         body: [
           ['Phones Sold', String(cs.count || 0), String(ps.count || 0), pctChange(cs.count, ps.count)],
-          ['Total Sales (৳)', formatCurrency(cs.amount), formatCurrency(ps.amount), pctChange(cs.amount, ps.amount)],
-          ['Cash Sales (৳)', formatCurrency(cs.cashAmount), formatCurrency(ps.cashAmount), pctChange(cs.cashAmount, ps.cashAmount)],
-          ['Baki Sales (৳)', formatCurrency(cs.bakiAmount), formatCurrency(ps.bakiAmount), pctChange(cs.bakiAmount, ps.bakiAmount)],
+          ['Total Sales', formatCurrency(cs.amount), formatCurrency(ps.amount), pctChange(cs.amount, ps.amount)],
+          ['Cash Sales', formatCurrency(cs.cashAmount), formatCurrency(ps.cashAmount), pctChange(cs.cashAmount, ps.cashAmount)],
+          ['Baki Sales', formatCurrency(cs.bakiAmount), formatCurrency(ps.bakiAmount), pctChange(cs.bakiAmount, ps.bakiAmount)],
         ],
         theme: 'striped',
         headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 10 },
         bodyStyles: { fontSize: 10 },
         margin: { left: margin, right: margin },
       })
-      y = doc.lastAutoTable.finalY + 20
+      y = (doc.lastAutoTable && doc.lastAutoTable.finalY) || y + 80
+      y += 20
 
-      // ── Brand Breakdown ──
+      // Brand Breakdown
       if (cs.brandBreakdown && Object.keys(cs.brandBreakdown).length > 0) {
+        if (y > pageH - 120) { doc.addPage(); y = 40 }
         doc.setFontSize(13)
         doc.setFont('helvetica', 'bold')
         doc.text('Brand Breakdown', margin, y)
         y += 8
         const brandRows = Object.entries(cs.brandBreakdown)
           .sort(([, a], [, b]) => b.amount - a.amount)
-          .map(([brand, data]) => [brand, String(data.count), `৳${formatCurrency(data.amount)}`])
+          .map(([brand, data]) => [brand, String(data.count), formatCurrency(data.amount)])
         autoTable(doc, {
           startY: y,
           head: [['Brand', 'Count', 'Amount']],
@@ -215,10 +210,12 @@ export default function Reports() {
           bodyStyles: { fontSize: 10 },
           margin: { left: margin, right: margin },
         })
-        y = doc.lastAutoTable.finalY + 20
+        y = (doc.lastAutoTable && doc.lastAutoTable.finalY) || y + 80
+        y += 20
       }
 
-      // ── Baki Summary ──
+      // Baki Summary
+      if (y > pageH - 120) { doc.addPage(); y = 40 }
       doc.setFontSize(13)
       doc.setFont('helvetica', 'bold')
       doc.text('Baki / Credit Summary', margin, y)
@@ -227,18 +224,20 @@ export default function Reports() {
         startY: y,
         head: [['Metric', 'Value']],
         body: [
-          ['New Baki Created', `${cb.newBakiCount || 0} (৳${formatCurrency(cb.newBakiAmount)})`],
-          ['Baki Cleared This Month', `৳${formatCurrency(cb.clearedAmount)}`],
-          ['Total Outstanding (all-time)', `৳${formatCurrency(cb.outstanding)}`],
+          ['New Baki Created', `${cb.newBakiCount || 0} (BDT ${formatCurrency(cb.newBakiAmount)})`],
+          ['Baki Cleared This Month', `BDT ${formatCurrency(cb.clearedAmount)}`],
+          ['Total Outstanding (all-time)', `BDT ${formatCurrency(cb.outstanding)}`],
         ],
         theme: 'striped',
         headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 10 },
         bodyStyles: { fontSize: 10 },
         margin: { left: margin, right: margin },
       })
-      y = doc.lastAutoTable.finalY + 20
+      y = (doc.lastAutoTable && doc.lastAutoTable.finalY) || y + 80
+      y += 20
 
-      // ── Cash Summary ──
+      // Cash Summary
+      if (y > pageH - 180) { doc.addPage(); y = 40 }
       doc.setFontSize(13)
       doc.setFont('helvetica', 'bold')
       doc.text('Cash Summary', margin, y)
@@ -247,20 +246,22 @@ export default function Reports() {
         startY: y,
         head: [['Metric', 'This Month', 'Prev Month', 'Change']],
         body: [
-          ['Investment (৳)', formatCurrency(cc.investment), formatCurrency(pc.investment), pctChange(cc.investment, pc.investment)],
-          ['Withdrawals (৳)', formatCurrency(cc.withdrawals), formatCurrency(pc.withdrawals), pctChange(cc.withdrawals, pc.withdrawals)],
-          ['Expenses (৳)', formatCurrency(cc.expenses), formatCurrency(pc.expenses), pctChange(cc.expenses, pc.expenses)],
-          ['Net Cash Flow (৳)', formatCurrency(cc.netFlow), formatCurrency(pc.netFlow), pctChange(cc.netFlow, pc.netFlow)],
-          ['Current Cash Balance (৳)', formatCurrency(cc.balance), formatCurrency(pc.balance), pctChange(cc.balance, pc.balance)],
+          ['Investment', formatCurrency(cc.investment), formatCurrency(pc.investment), pctChange(cc.investment, pc.investment)],
+          ['Withdrawals', formatCurrency(cc.withdrawals), formatCurrency(pc.withdrawals), pctChange(cc.withdrawals, pc.withdrawals)],
+          ['Expenses', formatCurrency(cc.expenses), formatCurrency(pc.expenses), pctChange(cc.expenses, pc.expenses)],
+          ['Net Cash Flow', formatCurrency(cc.netFlow), formatCurrency(pc.netFlow), pctChange(cc.netFlow, pc.netFlow)],
+          ['Current Cash Balance', formatCurrency(cc.balance), formatCurrency(pc.balance), pctChange(cc.balance, pc.balance)],
         ],
         theme: 'striped',
         headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 10 },
         bodyStyles: { fontSize: 10 },
         margin: { left: margin, right: margin },
       })
-      y = doc.lastAutoTable.finalY + 20
+      y = (doc.lastAutoTable && doc.lastAutoTable.finalY) || y + 80
+      y += 20
 
-      // ── Profit / Loss ──
+      // Profit / Loss
+      if (y > pageH - 150) { doc.addPage(); y = 40 }
       doc.setFontSize(13)
       doc.setFont('helvetica', 'bold')
       doc.text('Profit & Loss', margin, y)
@@ -269,9 +270,9 @@ export default function Reports() {
         startY: y,
         head: [['Metric', 'This Month', 'Prev Month', 'Change']],
         body: [
-          ['Gross Profit (৳)', formatCurrency(cp.grossProfit), formatCurrency(pp.grossProfit), pctChange(cp.grossProfit, pp.grossProfit)],
-          ['Expenses (৳)', formatCurrency(cc.expenses), formatCurrency(pc.expenses), pctChange(cc.expenses, pc.expenses)],
-          ['Net Profit (৳)', formatCurrency(cp.netProfit), formatCurrency(pp.netProfit), pctChange(cp.netProfit, pp.netProfit)],
+          ['Gross Profit', formatCurrency(cp.grossProfit), formatCurrency(pp.grossProfit), pctChange(cp.grossProfit, pp.grossProfit)],
+          ['Expenses', formatCurrency(cc.expenses), formatCurrency(pc.expenses), pctChange(cc.expenses, pc.expenses)],
+          ['Net Profit', formatCurrency(cp.netProfit), formatCurrency(pp.netProfit), pctChange(cp.netProfit, pp.netProfit)],
           ['Phones Sold', String(cp.soldCount || 0), String(pp.soldCount || 0), pctChange(cp.soldCount, pp.soldCount)],
         ],
         theme: 'striped',
@@ -280,25 +281,39 @@ export default function Reports() {
         margin: { left: margin, right: margin },
       })
 
-      // ── Footer ──
-      const footerY = doc.internal.pageSize.getHeight() - 20
-      doc.setFontSize(8)
-      doc.setTextColor(120, 120, 120)
-      doc.text('PhoneLedger • Monthly Report • ' + monthLabel, pageW / 2, footerY, { align: 'center' })
+      // Footer on every page
+      const pageCount = doc.internal.getNumberOfPages()
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i)
+        doc.setFontSize(8)
+        doc.setTextColor(120, 120, 120)
+        doc.text(`PhoneLedger - Monthly Report - ${monthLabel}  |  Page ${i} of ${pageCount}`, pageW / 2, pageH - 15, { align: 'center' })
+      }
 
       const fname = `PhoneLedger_Report_${MONTH_NAMES[selectedMonth]}_${selectedYear}.pdf`
       doc.save(fname)
+    } catch (err) {
+      console.error('PDF export failed:', err)
+      setExportError(`PDF export failed: ${err?.message || err}`)
     } finally {
       setExporting(null)
     }
   }
 
   function exportExcel() {
-    if (!currentData) return
+    if (!currentData) {
+      setExportError('Report data not loaded yet. Please wait for the page to finish loading.')
+      return
+    }
+    setExportError(null)
     setExporting('xlsx')
     try {
-      const payload = buildExportPayload()
-      const { monthLabel, generatedAt, current, prev } = payload
+      const XLSX = getXLSX()
+      if (!XLSX) {
+        throw new Error('XLSX library not loaded. Check your internet connection and refresh the page.')
+      }
+
+      const { monthLabel, generatedAt, current, prev } = buildExportPayload()
       const cs = current.sales || {}
       const cb = current.baki || {}
       const cc = current.cash || {}
@@ -308,34 +323,30 @@ export default function Reports() {
       const pc = prev.cash || {}
       const pp = prev.profit || {}
 
-      const XLSX = getXLSX()
-      if (!XLSX) {
-        throw new Error('Excel library not loaded. Please check your internet connection and refresh the page.')
-      }
       const wb = XLSX.utils.book_new()
 
-      // ── Summary sheet ──
+      // Summary sheet
       const summaryRows = [
-        ['PhoneLedger — Monthly Report'],
+        ['PhoneLedger - Monthly Report'],
         [monthLabel],
         [`Generated: ${generatedAt.toLocaleString('en-GB')}`],
         [],
         ['Section', 'Metric', 'This Month', 'Prev Month', 'Change'],
         ['Sales', 'Phones Sold', cs.count || 0, ps.count || 0, pctChange(cs.count, ps.count)],
-        ['Sales', 'Total Sales (৳)', cs.amount || 0, ps.amount || 0, pctChange(cs.amount, ps.amount)],
-        ['Sales', 'Cash Sales (৳)', cs.cashAmount || 0, ps.cashAmount || 0, pctChange(cs.cashAmount, ps.cashAmount)],
-        ['Sales', 'Baki Sales (৳)', cs.bakiAmount || 0, ps.bakiAmount || 0, pctChange(cs.bakiAmount, ps.bakiAmount)],
+        ['Sales', 'Total Sales', cs.amount || 0, ps.amount || 0, pctChange(cs.amount, ps.amount)],
+        ['Sales', 'Cash Sales', cs.cashAmount || 0, ps.cashAmount || 0, pctChange(cs.cashAmount, ps.cashAmount)],
+        ['Sales', 'Baki Sales', cs.bakiAmount || 0, ps.bakiAmount || 0, pctChange(cs.bakiAmount, ps.bakiAmount)],
         ['Baki', 'New Baki Created (count)', cb.newBakiCount || 0, '', ''],
-        ['Baki', 'New Baki Amount (৳)', cb.newBakiAmount || 0, '', ''],
-        ['Baki', 'Baki Cleared (৳)', cb.clearedAmount || 0, pb.clearedAmount || 0, pctChange(cb.clearedAmount, pb.clearedAmount)],
-        ['Baki', 'Total Outstanding (৳)', cb.outstanding || 0, '', ''],
-        ['Cash', 'Investment (৳)', cc.investment || 0, pc.investment || 0, pctChange(cc.investment, pc.investment)],
-        ['Cash', 'Withdrawals (৳)', cc.withdrawals || 0, pc.withdrawals || 0, pctChange(cc.withdrawals, pc.withdrawals)],
-        ['Cash', 'Expenses (৳)', cc.expenses || 0, pc.expenses || 0, pctChange(cc.expenses, pc.expenses)],
-        ['Cash', 'Net Cash Flow (৳)', cc.netFlow || 0, pc.netFlow || 0, pctChange(cc.netFlow, pc.netFlow)],
-        ['Cash', 'Current Balance (৳)', cc.balance || 0, pc.balance || 0, pctChange(cc.balance, pc.balance)],
-        ['Profit', 'Gross Profit (৳)', cp.grossProfit || 0, pp.grossProfit || 0, pctChange(cp.grossProfit, pp.grossProfit)],
-        ['Profit', 'Net Profit (৳)', cp.netProfit || 0, pp.netProfit || 0, pctChange(cp.netProfit, pp.netProfit)],
+        ['Baki', 'New Baki Amount', cb.newBakiAmount || 0, '', ''],
+        ['Baki', 'Baki Cleared', cb.clearedAmount || 0, pb.clearedAmount || 0, pctChange(cb.clearedAmount, pb.clearedAmount)],
+        ['Baki', 'Total Outstanding', cb.outstanding || 0, '', ''],
+        ['Cash', 'Investment', cc.investment || 0, pc.investment || 0, pctChange(cc.investment, pc.investment)],
+        ['Cash', 'Withdrawals', cc.withdrawals || 0, pc.withdrawals || 0, pctChange(cc.withdrawals, pc.withdrawals)],
+        ['Cash', 'Expenses', cc.expenses || 0, pc.expenses || 0, pctChange(cc.expenses, pc.expenses)],
+        ['Cash', 'Net Cash Flow', cc.netFlow || 0, pc.netFlow || 0, pctChange(cc.netFlow, pc.netFlow)],
+        ['Cash', 'Current Balance', cc.balance || 0, pc.balance || 0, pctChange(cc.balance, pc.balance)],
+        ['Profit', 'Gross Profit', cp.grossProfit || 0, pp.grossProfit || 0, pctChange(cp.grossProfit, pp.grossProfit)],
+        ['Profit', 'Net Profit', cp.netProfit || 0, pp.netProfit || 0, pctChange(cp.netProfit, pp.netProfit)],
       ]
       const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows)
       wsSummary['!cols'] = [{ wch: 14 }, { wch: 28 }, { wch: 16 }, { wch: 16 }, { wch: 12 }]
@@ -346,9 +357,9 @@ export default function Reports() {
       ]
       XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary')
 
-      // ── Brand Breakdown sheet ──
+      // Brand Breakdown sheet
       if (cs.brandBreakdown && Object.keys(cs.brandBreakdown).length > 0) {
-        const brandRows = [['Brand', 'Count', 'Amount (৳)']]
+        const brandRows = [['Brand', 'Count', 'Amount']]
         Object.entries(cs.brandBreakdown)
           .sort(([, a], [, b]) => b.amount - a.amount)
           .forEach(([brand, data]) => brandRows.push([brand, data.count, data.amount]))
@@ -359,8 +370,22 @@ export default function Reports() {
 
       const fname = `PhoneLedger_Report_${MONTH_NAMES[selectedMonth]}_${selectedYear}.xlsx`
       XLSX.writeFile(wb, fname)
+    } catch (err) {
+      console.error('Excel export failed:', err)
+      setExportError(`Excel export failed: ${err?.message || err}`)
     } finally {
       setExporting(null)
+    }
+  }
+
+  function buildExportPayload() {
+    return {
+      monthLabel: `${MONTH_NAMES[selectedMonth]} ${selectedYear}`,
+      monthIndex: selectedMonth,
+      year: selectedYear,
+      generatedAt: new Date(),
+      current: currentData,
+      prev: prevData,
     }
   }
 
@@ -378,18 +403,15 @@ export default function Reports() {
     const prevYear = month === 0 ? year - 1 : year
     const { start: pStart, end: pEnd } = getMonthRange(prevYear, prevMonth)
 
-    // Fetch all sales (with phone for buy_price)
     const { data: allSales } = await supabase
       .from('sales')
       .select('id, sell_price, payment_type, sale_date, phone:phones(buy_price, brand)')
       .order('sale_date', { ascending: false })
 
-    // Fetch all credits with their payments
     const { data: allCredits } = await supabase
       .from('credits')
       .select('id, total_due, remaining, status, last_payment_date, credit_payments(amount, payment_date)')
 
-    // Fetch all cash transactions
     const { data: allTx } = await supabase
       .from('cash_transactions')
       .select('id, type, amount, transaction_date')
@@ -426,14 +448,6 @@ export default function Reports() {
     function calcBaki(credits) {
       if (!credits) return { newBakiCount: 0, newBakiAmount: 0, clearedAmount: 0, outstanding: 0 }
 
-      // New baki created this month (credits whose sale_date is in this month — need to match via sales)
-      // For simplicity, we check if the credit's associated sale is in this month
-      // We don't have sale_date directly on credits, so we approximate by using the first credit_payments date
-      // Actually: credits don't have sale_date — let's join with sales. For now, we'll use credit_payments to find baki created
-      // Better approach: count credits where there are NO payments before this month start AND there are payments or credit exists
-      // Let's use a simpler approach: credits with status pending/partial/cleared this month
-      // We'll iterate through credit_payments to find total cleared this month
-
       const clearedAmount = (credits || [])
         .flatMap(c => c.credit_payments || [])
         .filter(p => p.payment_date >= start && p.payment_date <= end)
@@ -443,11 +457,6 @@ export default function Reports() {
         .filter(c => c.status !== 'cleared')
         .reduce((sum, c) => sum + Number(c.remaining || 0), 0)
 
-      // New baki: credits created this month — we can't determine this directly without sale_date
-      // Approximate: credits whose first payment date is in this month range (they were just created)
-      // Or: credits where remaining === total_due (fully outstanding) and payments exist this month
-      // Actually: let's count credits that were "opened" this month by checking sale dates from sales
-      // We'll pass sales in to calcBaki
       return { clearedAmount, outstanding }
     }
 
@@ -498,7 +507,6 @@ export default function Reports() {
       return { grossProfit, netProfit, soldCount: monthSales.length }
     }
 
-    // For new baki count, we need sales with payment_type=baki and sale_date in range
     function calcNewBaki(sales) {
       if (!sales) return 0
       return sales.filter(s =>
@@ -654,7 +662,7 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* ── SALES ── */}
+      {/* Sales */}
       <SectionCard title="📊 Sales">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
           <StatCard label="Phones Sold" value={s.count || 0} />
@@ -663,7 +671,6 @@ export default function Reports() {
           <StatCard label="Baki Sales" value={`৳${formatCurrency(s.bakiAmount)}`} sub={`${s.bakiCount || 0} phones`} color="text-amber-600" />
         </div>
 
-        {/* Brand breakdown */}
         {s.brandBreakdown && Object.keys(s.brandBreakdown).length > 0 && (
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Brand Breakdown</p>
@@ -684,7 +691,7 @@ export default function Reports() {
         )}
       </SectionCard>
 
-      {/* ── BAKI ── */}
+      {/* Baki */}
       <SectionCard title="🧾 Baki / Credit">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <StatCard label="New Baki Created" value={b.newBakiCount || 0} sub={`৳${formatCurrency(b.newBakiAmount)}`} color="text-amber-600" />
@@ -693,7 +700,7 @@ export default function Reports() {
         </div>
       </SectionCard>
 
-      {/* ── CASH FLOW ── */}
+      {/* Cash Flow */}
       <SectionCard title="💰 Cash Flow">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           <StatCard label="Investment" value={`৳${formatCurrency(c.investment)}`} color="text-blue-600" />
@@ -711,7 +718,7 @@ export default function Reports() {
         </div>
       </SectionCard>
 
-      {/* ── PROFIT / LOSS ── */}
+      {/* Profit / Loss */}
       <div className="card p-5 border-2 border-slate-900">
         <h3 className="text-sm font-semibold text-slate-700 mb-4 uppercase tracking-wide">📈 Profit & Loss</h3>
         <div className="grid grid-cols-3 gap-4 mb-4">
@@ -737,7 +744,7 @@ export default function Reports() {
         </p>
       </div>
 
-      {/* ── VS LAST MONTH ── */}
+      {/* vs Last Month */}
       <SectionCard title="↔️ vs Last Month">
         <div className="space-y-0">
           <ComparisonRow label="Total Sales Amount" current={s.amount} previous={ps.amount} />
