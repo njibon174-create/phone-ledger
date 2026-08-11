@@ -4,19 +4,19 @@
 
 @layer base {
   :root {
-    --bg-primary: #ffffff;
-    --bg-secondary: #f8fafc;
-    --bg-tertiary: #f1f5f9;
-    --border: #e2e8f0;
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #94a3b8;
-    --accent: #0ea5e9;
-    --accent-hover: #0284c7;
-    --danger: #ef4444;
-    --danger-hover: #dc2626;
-    --success: #22c55e;
-    --warning: #f59e0b;
+    --bg-primary: #070A0F;
+    --bg-secondary: #0C1118;
+    --bg-card: #111720;
+    --bg-elevated: #151D28;
+    --border: #202A36;
+    --primary: #4F8CFF;
+    --primary-glow: '#4F8CFF22';
+    --success: #20D69A;
+    --warning: #FFB84D;
+    --danger: #FF5C6C;
+    --text-primary: #F4F7FB;
+    --text-secondary: #8995A5;
+    --text-muted: #566170;
   }
 
   html {
@@ -25,89 +25,99 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-900;
+    background-color: #070A0F;
+    color: #F4F7FB;
   }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #0C1118; }
+  ::-webkit-scrollbar-thumb { background: #202A36; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #4F8CFF44; }
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed;
   }
   .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700 active:scale-[0.98];
+    @apply btn bg-primary text-white hover:brightness-110 active:scale-[0.97] shadow-lg shadow-primary/20;
   }
   .btn-secondary {
-    @apply btn bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 active:scale-[0.98];
+    @apply btn bg-elev-bg text-main-text border border-border hover:bg-card-bg active:scale-[0.97];
   }
   .btn-danger {
-    @apply btn bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 active:scale-[0.98];
+    @apply btn bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 active:scale-[0.97];
   }
   .btn-ghost {
-    @apply btn text-slate-500 hover:bg-slate-100 hover:text-slate-700;
+    @apply btn text-sec-text hover:bg-elev-bg hover:text-main-text;
   }
   .btn-sm {
     @apply px-3 py-1.5 text-xs;
   }
 
   .input {
-    @apply w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-900 placeholder-slate-400
-           focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500
+    @apply w-full px-3 py-2 rounded-lg border border-border text-sm text-main-text placeholder-muted-text bg-sec-bg
+           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary
            transition-all duration-150;
   }
   .input-error {
-    @apply border-red-400 focus:ring-red-500/20 focus:border-red-500;
+    @apply border-danger focus:ring-danger/30 focus:border-danger;
   }
 
   .label {
-    @apply block text-xs font-medium text-slate-500 mb-1;
+    @apply block text-xs font-medium text-sec-text mb-1;
   }
 
   .card {
-    @apply bg-white rounded-xl border border-slate-200 shadow-sm;
+    @apply bg-card-bg rounded-xl border border-border;
   }
 
   .table-container {
-    @apply w-full overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm;
+    @apply w-full overflow-x-auto rounded-xl border border-border bg-card-bg;
   }
   .table {
     @apply w-full text-sm text-left;
   }
   .table thead {
-    @apply bg-slate-50 border-b border-slate-200;
+    @apply bg-elev-bg border-b border-border;
   }
   .table th {
-    @apply px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide;
+    @apply px-4 py-3 text-xs font-semibold text-sec-text uppercase tracking-wide;
   }
   .table td {
-    @apply px-4 py-3 text-slate-700 border-b border-slate-100;
+    @apply px-4 py-3 text-main-text border-b border-border/50;
   }
   .table tbody tr:last-child td {
     @apply border-b-0;
   }
   .table tbody tr:hover {
-    @apply bg-slate-50/50;
+    @apply bg-elev-bg/50;
   }
 
   .badge {
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
   }
   .badge-success {
-    @apply badge bg-emerald-50 text-emerald-700;
+    @apply badge bg-success/15 text-success;
   }
   .badge-warning {
-    @apply badge bg-amber-50 text-amber-700;
+    @apply badge bg-warning/15 text-warning;
+  }
+  .badge-danger {
+    @apply badge bg-danger/15 text-danger;
   }
   .badge-slate {
-    @apply badge bg-slate-100 text-slate-600;
+    @apply badge bg-elev-bg text-sec-text border border-border;
   }
 
   .stat-card {
     @apply card px-5 py-4 flex flex-col gap-1;
   }
   .stat-label {
-    @apply text-xs font-medium text-slate-500 uppercase tracking-wide;
+    @apply text-xs font-medium text-sec-text uppercase tracking-wide;
   }
   .stat-value {
-    @apply text-2xl font-bold text-slate-900;
+    @apply text-2xl font-bold text-main-text;
   }
 }
