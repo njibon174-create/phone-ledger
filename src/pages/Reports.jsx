@@ -12,6 +12,14 @@ function formatDate(dateStr) {
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
+function pctChange(current, previous) {
+  if (previous === null || previous === undefined) return '—'
+  if (previous === 0) return current > 0 ? '+100%' : '0%'
+  const change = ((current - previous) / previous) * 100
+  const sign = change > 0 ? '+' : ''
+  return `${sign}${change.toFixed(1)}%`
+}
+
 function getMonthRange(year, month) {
   // month is 0-indexed
   const start = `${year}-${String(month + 1).padStart(2, '0')}-01`
@@ -61,7 +69,9 @@ function ComparisonRow({ label, current, previous, isCurrency = true, invertColo
   // For profit/loss and outstanding, up = good (green)
   // For expenses/withdrawals, down = good (red means lower which is better)
   // For outstanding baki, lower = better
-  const arrowColor = isNeutral ? 'text-slate-400' : isPositive ? 'text-emerald-600' : 'text-red-600'
+  const arrowColor = isNeutral ? 'text-slate-400' : invertColors
+    ? (isPositive ? 'text-red-600' : 'text-emerald-600')
+    : (isPositive ? 'text-emerald-600' : 'text-red-600')
   const ArrowIcon = isPositive ? (
     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
   ) : isPositive === false && !isNeutral ? (
@@ -97,6 +107,248 @@ export default function Reports() {
   const [loading, setLoading] = useState(true)
   const [currentData, setCurrentData] = useState(null)
   const [prevData, setPrevData] = useState(null)
+  const [exporting, setExporting] = useState(null) // 'pdf' | 'xlsx' | null
+
+  // ── Export helpers ─────────────────────────────────────────────────
+  function buildExportPayload() {
+    return {
+      monthLabel,
+      monthIndex: selectedMonth,
+      year: selectedYear,
+      generatedAt: new Date(),
+      current: currentData,
+      prev: prevData,
+    }
+  }
+
+  function exportPDF() {
+    if (!currentData) return
+    setExporting('pdf')
+    try {
+      const payload = buildExportPayload()
+      const { monthLabel, generatedAt, current, prev } = payload
+      const cs = current.sales || {}
+      const cb = current.baki || {}
+      const cc = current.cash || {}
+      const cp = current.profit || {}
+      const ps = prev.sales || {}
+      const pb = prev.baki || {}
+      const pc = prev.cash || {}
+      const pp = prev.profit || {}
+
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' })
+      const pageW = doc.internal.pageSize.getWidth()
+      const margin = 40
+      let y = 40
+
+      // ── Header ──
+      doc.setFillColor(15, 23, 42)
+      doc.rect(0, 0, pageW, 70, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(18)
+      doc.setFont('helvetica', 'bold')
+      doc.text('PhoneLedger — Monthly Report', margin, 35)
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'normal')
+      doc.text(monthLabel, margin, 55)
+      doc.setFontSize(9)
+      doc.text(`Generated: ${generatedAt.toLocaleString('en-GB')}`, pageW - margin, 55, { align: 'right' })
+
+      y = 100
+      doc.setTextColor(15, 23, 42)
+
+      // ── Sales Summary ──
+      doc.setFontSize(13)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Sales Summary', margin, y)
+      y += 8
+
+      autoTable(doc, {
+        startY: y,
+        head: [['Metric', 'This Month', 'Prev Month', 'Change']],
+        body: [
+          ['Phones Sold', String(cs.count || 0), String(ps.count || 0), pctChange(cs.count, ps.count)],
+          ['Total Sales (৳)', formatCurrency(cs.amount), formatCurrency(ps.amount), pctChange(cs.amount, ps.amount)],
+          ['Cash Sales (৳)', formatCurrency(cs.cashAmount), formatCurrency(ps.cashAmount), pctChange(cs.cashAmount, ps.cashAmount)],
+          ['Baki Sales (৳)', formatCurrency(cs.bakiAmount), formatCurrency(ps.bakiAmount), pctChange(cs.bakiAmount, ps.bakiAmount)],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 10 },
+        bodyStyles: { fontSize: 10 },
+        margin: { left: margin, right: margin },
+      })
+      y = doc.lastAutoTable.finalY + 20
+
+      // ── Brand Breakdown ──
+      if (cs.brandBreakdown && Object.keys(cs.brandBreakdown).length > 0) {
+        doc.setFontSize(13)
+        doc.setFont('helvetica', 'bold')
+        doc.text('Brand Breakdown', margin, y)
+        y += 8
+        const brandRows = Object.entries(cs.brandBreakdown)
+          .sort(([, a], [, b]) => b.amount - a.amount)
+          .map(([brand, data]) => [brand, String(data.count), `৳${formatCurrency(data.amount)}`])
+        autoTable(doc, {
+          startY: y,
+          head: [['Brand', 'Count', 'Amount']],
+          body: brandRows,
+          theme: 'striped',
+          headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 10 },
+          bodyStyles: { fontSize: 10 },
+          margin: { left: margin, right: margin },
+        })
+        y = doc.lastAutoTable.finalY + 20
+      }
+
+      // ── Baki Summary ──
+      doc.setFontSize(13)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Baki / Credit Summary', margin, y)
+      y += 8
+      autoTable(doc, {
+        startY: y,
+        head: [['Metric', 'Value']],
+        body: [
+          ['New Baki Created', `${cb.newBakiCount || 0} (৳${formatCurrency(cb.newBakiAmount)})`],
+          ['Baki Cleared This Month', `৳${formatCurrency(cb.clearedAmount)}`],
+          ['Total Outstanding (all-time)', `৳${formatCurrency(cb.outstanding)}`],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 10 },
+        bodyStyles: { fontSize: 10 },
+        margin: { left: margin, right: margin },
+      })
+      y = doc.lastAutoTable.finalY + 20
+
+      // ── Cash Summary ──
+      doc.setFontSize(13)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Cash Summary', margin, y)
+      y += 8
+      autoTable(doc, {
+        startY: y,
+        head: [['Metric', 'This Month', 'Prev Month', 'Change']],
+        body: [
+          ['Investment (৳)', formatCurrency(cc.investment), formatCurrency(pc.investment), pctChange(cc.investment, pc.investment)],
+          ['Withdrawals (৳)', formatCurrency(cc.withdrawals), formatCurrency(pc.withdrawals), pctChange(cc.withdrawals, pc.withdrawals)],
+          ['Expenses (৳)', formatCurrency(cc.expenses), formatCurrency(pc.expenses), pctChange(cc.expenses, pc.expenses)],
+          ['Net Cash Flow (৳)', formatCurrency(cc.netFlow), formatCurrency(pc.netFlow), pctChange(cc.netFlow, pc.netFlow)],
+          ['Current Cash Balance (৳)', formatCurrency(cc.balance), formatCurrency(pc.balance), pctChange(cc.balance, pc.balance)],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 10 },
+        bodyStyles: { fontSize: 10 },
+        margin: { left: margin, right: margin },
+      })
+      y = doc.lastAutoTable.finalY + 20
+
+      // ── Profit / Loss ──
+      doc.setFontSize(13)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Profit & Loss', margin, y)
+      y += 8
+      autoTable(doc, {
+        startY: y,
+        head: [['Metric', 'This Month', 'Prev Month', 'Change']],
+        body: [
+          ['Gross Profit (৳)', formatCurrency(cp.grossProfit), formatCurrency(pp.grossProfit), pctChange(cp.grossProfit, pp.grossProfit)],
+          ['Expenses (৳)', formatCurrency(cc.expenses), formatCurrency(pc.expenses), pctChange(cc.expenses, pc.expenses)],
+          ['Net Profit (৳)', formatCurrency(cp.netProfit), formatCurrency(pp.netProfit), pctChange(cp.netProfit, pp.netProfit)],
+          ['Phones Sold', String(cp.soldCount || 0), String(pp.soldCount || 0), pctChange(cp.soldCount, pp.soldCount)],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 10 },
+        bodyStyles: { fontSize: 10 },
+        margin: { left: margin, right: margin },
+      })
+
+      // ── Footer ──
+      const footerY = doc.internal.pageSize.getHeight() - 20
+      doc.setFontSize(8)
+      doc.setTextColor(120, 120, 120)
+      doc.text('PhoneLedger • Monthly Report • ' + monthLabel, pageW / 2, footerY, { align: 'center' })
+
+      const fname = `PhoneLedger_Report_${MONTH_NAMES[selectedMonth]}_${selectedYear}.pdf`
+      doc.save(fname)
+    } finally {
+      setExporting(null)
+    }
+  }
+
+  function exportExcel() {
+    if (!currentData) return
+    setExporting('xlsx')
+    try {
+      const payload = buildExportPayload()
+      const { monthLabel, generatedAt, current, prev } = payload
+      const cs = current.sales || {}
+      const cb = current.baki || {}
+      const cc = current.cash || {}
+      const cp = current.profit || {}
+      const ps = prev.sales || {}
+      const pb = prev.baki || {}
+      const pc = prev.cash || {}
+      const pp = prev.profit || {}
+
+      const wb = XLSX.utils.book_new()
+
+      // ── Summary sheet ──
+      const summaryRows = [
+        ['PhoneLedger — Monthly Report'],
+        [monthLabel],
+        [`Generated: ${generatedAt.toLocaleString('en-GB')}`],
+        [],
+        ['Section', 'Metric', 'This Month', 'Prev Month', 'Change'],
+        ['Sales', 'Phones Sold', cs.count || 0, ps.count || 0, pctChange(cs.count, ps.count)],
+        ['Sales', 'Total Sales (৳)', cs.amount || 0, ps.amount || 0, pctChange(cs.amount, ps.amount)],
+        ['Sales', 'Cash Sales (৳)', cs.cashAmount || 0, ps.cashAmount || 0, pctChange(cs.cashAmount, ps.cashAmount)],
+        ['Sales', 'Baki Sales (৳)', cs.bakiAmount || 0, ps.bakiAmount || 0, pctChange(cs.bakiAmount, ps.bakiAmount)],
+        ['Baki', 'New Baki Created (count)', cb.newBakiCount || 0, '', ''],
+        ['Baki', 'New Baki Amount (৳)', cb.newBakiAmount || 0, '', ''],
+        ['Baki', 'Baki Cleared (৳)', cb.clearedAmount || 0, pb.clearedAmount || 0, pctChange(cb.clearedAmount, pb.clearedAmount)],
+        ['Baki', 'Total Outstanding (৳)', cb.outstanding || 0, '', ''],
+        ['Cash', 'Investment (৳)', cc.investment || 0, pc.investment || 0, pctChange(cc.investment, pc.investment)],
+        ['Cash', 'Withdrawals (৳)', cc.withdrawals || 0, pc.withdrawals || 0, pctChange(cc.withdrawals, pc.withdrawals)],
+        ['Cash', 'Expenses (৳)', cc.expenses || 0, pc.expenses || 0, pctChange(cc.expenses, pc.expenses)],
+        ['Cash', 'Net Cash Flow (৳)', cc.netFlow || 0, pc.netFlow || 0, pctChange(cc.netFlow, pc.netFlow)],
+        ['Cash', 'Current Balance (৳)', cc.balance || 0, pc.balance || 0, pctChange(cc.balance, pc.balance)],
+        ['Profit', 'Gross Profit (৳)', cp.grossProfit || 0, pp.grossProfit || 0, pctChange(cp.grossProfit, pp.grossProfit)],
+        ['Profit', 'Net Profit (৳)', cp.netProfit || 0, pp.netProfit || 0, pctChange(cp.netProfit, pp.netProfit)],
+      ]
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows)
+      wsSummary['!cols'] = [{ wch: 14 }, { wch: 28 }, { wch: 16 }, { wch: 16 }, { wch: 12 }]
+      wsSummary['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 4 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 4 } },
+      ]
+      XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary')
+
+      // ── Brand Breakdown sheet ──
+      if (cs.brandBreakdown && Object.keys(cs.brandBreakdown).length > 0) {
+        const brandRows = [['Brand', 'Count', 'Amount (৳)']]
+        Object.entries(cs.brandBreakdown)
+          .sort(([, a], [, b]) => b.amount - a.amount)
+          .forEach(([brand, data]) => brandRows.push([brand, data.count, data.amount]))
+        const wsBrands = XLSX.utils.aoa_to_sheet(brandRows)
+        wsBrands['!cols'] = [{ wch: 16 }, { wch: 10 }, { wch: 16 }]
+        XLSX.utils.book_append_sheet(wb, wsBrands, 'Brand Breakdown')
+      }
+
+      const fname = `PhoneLedger_Report_${MONTH_NAMES[selectedMonth]}_${selectedYear}.xlsx`
+      XLSX.writeFile(wb, fname)
+    } finally {
+      setExporting(null)
+    }
+  }
+
+  function pctChange(current, previous) {
+    if (previous === null || previous === undefined) return '—'
+    if (previous === 0) return current > 0 ? '+100%' : '0%'
+    const change = ((current - previous) / previous) * 100
+    const sign = change > 0 ? '+' : ''
+    return `${sign}${change.toFixed(1)}%`
+  }
 
   async function fetchMonthData(year, month) {
     const { start, end } = getMonthRange(year, month)
@@ -300,16 +552,67 @@ export default function Reports() {
   return (
     <div className="space-y-6">
       {/* Month Navigator */}
-      <div className="flex items-center justify-between">
-        <button className="btn-secondary btn-sm" onClick={prevMonth}>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
-          Prev
-        </button>
-        <h2 className="text-lg font-bold text-slate-900">{monthLabel}</h2>
-        <button className="btn-secondary btn-sm" onClick={nextMonth}>
-          Next
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
-        </button>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <button className="btn-secondary btn-sm" onClick={prevMonth}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
+            Prev
+          </button>
+          <h2 className="text-lg font-bold text-slate-900 px-2">{monthLabel}</h2>
+          <button className="btn-secondary btn-sm" onClick={nextMonth}>
+            Next
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            className="btn-secondary btn-sm"
+            onClick={exportPDF}
+            disabled={exporting !== null || !currentData}
+            title="Export as PDF"
+          >
+            {exporting === 'pdf' ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Generating…
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Export PDF
+              </>
+            )}
+          </button>
+          <button
+            className="btn-secondary btn-sm"
+            onClick={exportExcel}
+            disabled={exporting !== null || !currentData}
+            title="Export as Excel"
+          >
+            {exporting === 'xlsx' ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Generating…
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Export Excel
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ── SALES ── */}
@@ -404,7 +707,7 @@ export default function Reports() {
           <ComparisonRow label="Baki Sales" current={s.bakiAmount} previous={ps.bakiAmount} />
           <ComparisonRow label="Baki Cleared" current={b.clearedAmount} previous={pb.clearedAmount} />
           <ComparisonRow label="Net Cash Flow" current={c.netFlow} previous={pc.netFlow} />
-          <ComparisonRow label="Expenses" current={c.expenses} previous={pc.expenses} invertColors />
+          <ComparisonRow label="Expenses" current={c.expenses} previous={pc.expenses} invertColors={true} />
           <ComparisonRow label="Net Profit" current={p.netProfit} previous={pp.netProfit} />
           <ComparisonRow label="Current Balance" current={c.balance} previous={pc.balance} />
         </div>
