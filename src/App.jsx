@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import AddPhone from './pages/AddPhone'
 import InventoryList from './pages/InventoryList'
+import SalesList from './pages/SalesList'
 
 const NAV = [
   {
@@ -13,6 +14,17 @@ const NAV = [
       </svg>
     ),
     desc: 'Add & manage phone stock',
+  },
+  {
+    id: 'sales',
+    label: 'Sales',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+      </svg>
+    ),
+    desc: 'View all sales history',
   },
 ]
 
@@ -56,7 +68,7 @@ export default function App() {
 
         {/* Footer */}
         <div className="border-t border-slate-100 pt-4 pb-6 px-3">
-          <p className="text-xs text-slate-300">v1.0 — Inventory only</p>
+          <p className="text-xs text-slate-300">v1.0</p>
         </div>
       </aside>
 
@@ -123,9 +135,11 @@ export default function App() {
             <div>
               <h2 className="text-xl font-bold text-slate-900">
                 {activeTab === 'inventory' && 'Inventory'}
+                {activeTab === 'sales' && 'Sales'}
               </h2>
               <p className="text-sm text-slate-400 mt-0.5">
                 {activeTab === 'inventory' && 'Manage your phone stock'}
+                {activeTab === 'sales' && 'View all sales history'}
               </p>
             </div>
             {activeTab === 'inventory' && (
@@ -155,6 +169,7 @@ export default function App() {
           )}
 
           {activeTab === 'inventory' && <InventoryList />}
+          {activeTab === 'sales' && <SalesList />}
         </div>
       </main>
     </div>

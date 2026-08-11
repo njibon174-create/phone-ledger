@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import EditPhone from './EditPhone'
+import SellPhone from './SellPhone'
 
 const BRANDS = ['Samsung', 'Xiaomi', 'Realme', 'Vivo', 'Oppo', 'iTel', 'Symphony', 'Walton', 'Apple', 'Other']
 
@@ -38,7 +39,7 @@ function formatDate(dateStr) {
 function SkeletonRow() {
   return (
     <tr className="border-b border-slate-100">
-      {[90, 100, 140, 80, 80, 80, 90, 80].map((w, i) => (
+      {[90, 100, 140, 80, 80, 80, 90, 100].map((w, i) => (
         <td key={i} className="px-4 py-3">
           <div className="h-4 rounded bg-slate-100 animate-pulse" style={{ width: w }} />
         </td>
@@ -77,9 +78,10 @@ export default function InventoryList() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [brandFilter, setBrandFilter] = useState('all')
   const [editPhone, setEditPhone] = useState(null)
+  const [sellPhone, setSellPhone] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deleting, setDeleting] = useState(false)
-  const [viewMode, setViewMode] = useState('table')
+  const [viewMode, setViewMode] = useState('cards') // default: cards
   const [toast, setToast] = useState(null)
 
   const showToast = useCallback((msg, type = 'success') => {
@@ -112,6 +114,12 @@ export default function InventoryList() {
     }
   }
 
+  function handleSaleSuccess() {
+    setSellPhone(null)
+    showToast('Sale completed successfully!')
+    fetchPhones()
+  }
+
   const filtered = phones.filter(p => {
     const matchStatus = statusFilter === 'all' || p.status === statusFilter
     const matchBrand  = brandFilter === 'all' || p.brand === brandFilter
@@ -123,10 +131,10 @@ export default function InventoryList() {
   })
 
   const inStock = phones.filter(p => p.status === 'in_stock')
-  const totalInStock    = inStock.length
-  const totalInvestment = inStock.reduce((s, p) => s + Number(p.buy_price || 0), 0)
-  const isEmpty         = !loading && filtered.length === 0
-  const isSearchActive  = search || statusFilter !== 'all' || brandFilter !== 'all'
+  const totalInStock     = inStock.length
+  const totalInvestment  = inStock.reduce((s, p) => s + Number(p.buy_price || 0), 0)
+  const isEmpty          = !loading && filtered.length === 0
+  const isSearchActive   = search || statusFilter !== 'all' || brandFilter !== 'all'
 
   return (
     <div className="space-y-5">
@@ -225,10 +233,8 @@ export default function InventoryList() {
               </tr>
             </thead>
             <tbody>
-              {/* Loading skeletons */}
               {loading && Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
 
-              {/* Empty state — no phones at all */}
               {!loading && phones.length === 0 && (
                 <tr>
                   <td colSpan={8} className="text-center py-16">
@@ -247,7 +253,6 @@ export default function InventoryList() {
                 </tr>
               )}
 
-              {/* Empty state — filters active but no matches */}
               {!loading && phones.length > 0 && filtered.length === 0 && (
                 <tr>
                   <td colSpan={8} className="text-center py-16">
@@ -266,11 +271,10 @@ export default function InventoryList() {
                 </tr>
               )}
 
-              {/* Data rows */}
               {!loading && filtered.map(phone => (
                 <tr
                   key={phone.id}
-                  className="group border-b border-slate-100 last:border-0 transition-colors duration-75 hover:bg-slate-50/70"
+                  className="border-b border-slate-100 last:border-0 transition-colors duration-75 hover:bg-slate-50/70"
                 >
                   <td className="font-medium text-slate-900">{phone.brand}</td>
                   <td className="text-slate-600">{phone.model}</td>
@@ -285,7 +289,19 @@ export default function InventoryList() {
                   </td>
                   <td className="text-slate-400 text-xs">{formatDate(phone.added_date)}</td>
                   <td className="text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-1">
+                      {phone.status === 'in_stock' && (
+                        <button
+                          className="btn btn-sm bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100"
+                          onClick={() => setSellPhone(phone)}
+                          title="Sell"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
+                          </svg>
+                          Sell
+                        </button>
+                      )}
                       <button
                         className="btn-ghost btn-sm text-slate-400 hover:text-slate-700 hover:bg-slate-100"
                         onClick={() => setEditPhone(phone)}
@@ -306,7 +322,7 @@ export default function InventoryList() {
                           </svg>
                         </button>
                       ) : (
-                        <div className="w-7 h-7" title="Cannot delete — phone is sold or returned" />
+                        <div className="w-7 h-7" />
                       )}
                     </div>
                   </td>
@@ -320,10 +336,8 @@ export default function InventoryList() {
       {/* ─── CARD VIEW ─── */}
       {viewMode === 'cards' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Loading skeletons */}
           {loading && Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
 
-          {/* Empty state — no phones at all */}
           {!loading && phones.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center py-20 gap-4">
               <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
@@ -338,7 +352,6 @@ export default function InventoryList() {
             </div>
           )}
 
-          {/* Empty state — filters active */}
           {!loading && phones.length > 0 && filtered.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center py-20 gap-4">
               <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
@@ -353,7 +366,6 @@ export default function InventoryList() {
             </div>
           )}
 
-          {/* Card rows */}
           {!loading && filtered.map(phone => (
             <div key={phone.id} className="card p-4 flex flex-col gap-3 border border-slate-200 hover:border-slate-300 transition-colors">
               {/* Header */}
@@ -393,6 +405,17 @@ export default function InventoryList() {
 
               {/* Actions */}
               <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                {phone.status === 'in_stock' && (
+                  <button
+                    className="btn btn-sm flex-1 justify-center bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100"
+                    onClick={() => setSellPhone(phone)}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
+                    </svg>
+                    Sell
+                  </button>
+                )}
                 <button
                   className="btn-secondary btn-sm flex-1 justify-center"
                   onClick={() => setEditPhone(phone)}
@@ -432,6 +455,20 @@ export default function InventoryList() {
               phone={editPhone}
               onSuccess={() => { setEditPhone(null); showToast('Phone updated successfully.'); fetchPhones() }}
               onCancel={() => setEditPhone(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ─── SELL MODAL ─── */}
+      {sellPhone && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="card w-full max-w-md p-6 shadow-2xl">
+            <h2 className="text-base font-semibold text-slate-900 mb-4">Sell Phone</h2>
+            <SellPhone
+              phone={sellPhone}
+              onSuccess={handleSaleSuccess}
+              onCancel={() => setSellPhone(null)}
             />
           </div>
         </div>
