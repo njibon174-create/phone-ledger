@@ -256,7 +256,7 @@ export default function BakiLedger() {
     .filter(c => c.status === 'cleared')
     .reduce((s, c) => s + Number(c.total_due || 0), 0)
 
-  const pendingBuyers = credits.filter(c => c.status === 'pending').length
+  const pendingBuyers = credits.filter(c => c.status !== 'cleared').length
 
   return (
     <div className="space-y-5">
@@ -290,7 +290,7 @@ export default function BakiLedger() {
           <span className="stat-value text-emerald-600">৳{formatCurrency(totalCleared)}</span>
         </div>
         <div className="stat-card sm:col-span-1">
-          <span className="stat-label">Pending Buyers</span>
+          <span className="stat-label">Outstanding Buyers</span>
           <span className="stat-value">{pendingBuyers}</span>
         </div>
       </div>
