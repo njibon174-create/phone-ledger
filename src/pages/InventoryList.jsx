@@ -122,6 +122,31 @@ export default function InventoryList() {
     fetchPhones()
   }
 
+  function handleScanResult(code) {
+    setShowScanner(false)
+    const cleaned = (code || '').replace(/\D/g, '')
+    if (!cleaned) {
+      setSearch(code)
+      return
+    }
+    // Try to find exact IMEI match
+    const match = phones.find(p => p.imei.replace(/\D/g, '') === cleaned)
+    if (match) {
+      if (match.status === 'in_stock') {
+        setSellPhone(match)
+        showToast(`Found ${match.brand} ${match.model} — opening sale form.`)
+      } else if (match.status === 'sold') {
+        showToast(`This phone is already sold.`, 'error')
+      } else if (match.status === 'returned') {
+        showToast(`This phone is marked returned.`, 'error')
+      }
+    } else {
+      // Fallback: search by substring
+      setSearch(cleaned)
+      showToast(`No exact match — narrowed search to "${cleaned}".`)
+    }
+  }
+
   const filtered = phones.filter(p => {
     const matchStatus = statusFilter === 'all' || p.status === statusFilter
     const matchBrand  = brandFilter === 'all' || p.brand === brandFilter
@@ -535,11 +560,8 @@ export default function InventoryList() {
       {/* ─── BARCODE SCANNER MODAL ─── */}
       {showScanner && (
         <BarcodeScanner
-          title="Scan IMEI to Search"
-          onScan={(code) => {
-            setShowScanner(false)
-            setSearch(code)
-          }}
+          title="Scan IMEI Barcode"
+          onScan={handleScanResult}
           onClose={() => setShowScanner(false)}
         />
       )}
