@@ -264,7 +264,7 @@ export default function BakiLedger() {
       {fetchError && (
         <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-600">
           <p className="font-medium">Fetch error: {fetchError}</p>
-          <p className="text-xs mt-1">Showing fallback data without buyer/phone details.</p>
+          <p className="text-xs mt-1">Pull to refresh or check your connection.</p>
         </div>
       )}
 

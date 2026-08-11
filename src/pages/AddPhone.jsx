@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import BarcodeScanner from '../components/BarcodeScanner'
 
 const BRANDS = ['Samsung', 'Xiaomi', 'Realme', 'Vivo', 'Oppo', 'iTel', 'Symphony', 'Walton', 'Apple', 'Other']
 
@@ -18,6 +19,7 @@ export default function AddPhone({ onSuccess, onCancel }) {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const [imeiError, setImeiError] = useState('')
+  const [showScanner, setShowScanner] = useState(false)
 
   function validate() {
     const errs = {}
@@ -104,16 +106,45 @@ export default function AddPhone({ onSuccess, onCancel }) {
       {/* IMEI */}
       <div>
         <label className="label">IMEI</label>
-        <input
-          type="text"
-          className={`input font-mono ${errors.imei || imeiError ? 'input-error' : ''}`}
-          placeholder="15–16 digit IMEI"
-          value={imei}
-          maxLength={16}
-          onChange={e => { setImei(e.target.value.replace(/\D/g, '')); setErrors(p => ({ ...p, imei: '' })); setImeiError('') }}
-        />
+        <div className="flex gap-2">
+          <input
+            type="text"
+            className={`input font-mono flex-1 ${errors.imei || imeiError ? 'input-error' : ''}`}
+            placeholder="15–16 digit IMEI"
+            value={imei}
+            maxLength={16}
+            onChange={e => { setImei(e.target.value.replace(/\D/g, '')); setErrors(p => ({ ...p, imei: '' })); setImeiError('') }}
+          />
+          <button
+            type="button"
+            className="btn-secondary px-3 shrink-0"
+            onClick={() => setShowScanner(true)}
+            title="Scan barcode"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </button>
+        </div>
         {(errors.imei || imeiError) && <p className="mt-1 text-xs text-red-500">{imeiError || errors.imei}</p>}
       </div>
+
+      {/* Barcode Scanner Modal */}
+      {showScanner && (
+        <BarcodeScanner
+          title="Scan IMEI Barcode"
+          onScan={(code) => {
+            setShowScanner(false)
+            setImei(code.replace(/\D/g, ''))
+            setErrors(p => ({ ...p, imei: '' }))
+            setImeiError('')
+          }}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
 
       {/* Prices */}
       <div className="grid grid-cols-2 gap-3">

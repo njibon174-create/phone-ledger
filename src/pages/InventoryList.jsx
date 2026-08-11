@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import EditPhone from './EditPhone'
 import SellPhone from './SellPhone'
+import BarcodeScanner from '../components/BarcodeScanner'
 
 const BRANDS = ['Samsung', 'Xiaomi', 'Realme', 'Vivo', 'Oppo', 'iTel', 'Symphony', 'Walton', 'Apple', 'Other']
 
@@ -83,6 +84,7 @@ export default function InventoryList() {
   const [deleting, setDeleting] = useState(false)
   const [viewMode, setViewMode] = useState('cards') // default: cards
   const [toast, setToast] = useState(null)
+  const [showScanner, setShowScanner] = useState(false)
 
   const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type })
@@ -170,12 +172,35 @@ export default function InventoryList() {
           </svg>
           <input
             type="text"
-            className="input pl-9"
+            className="input pl-9 pr-9"
             placeholder="Search IMEI or model…"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
+          {search && (
+            <button
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+              onClick={() => setSearch('')}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          )}
         </div>
+
+        <button
+          className="btn-secondary px-3"
+          onClick={() => setShowScanner(true)}
+          title="Scan barcode"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+              d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+              d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </button>
 
         <select className="input w-auto" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
           <option value="all">All Status</option>
@@ -505,6 +530,18 @@ export default function InventoryList() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ─── BARCODE SCANNER MODAL ─── */}
+      {showScanner && (
+        <BarcodeScanner
+          title="Scan IMEI to Search"
+          onScan={(code) => {
+            setShowScanner(false)
+            setSearch(code)
+          }}
+          onClose={() => setShowScanner(false)}
+        />
       )}
     </div>
   )
