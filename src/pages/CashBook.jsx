@@ -36,6 +36,7 @@ const TX_TYPE_CONFIG = {
 
 const MONEY_IN_TYPES = ['investment', 'sale_cash', 'credit_payment_received']
 const MONEY_OUT_TYPES = ['withdrawal', 'expense']
+const MANUAL_TYPES = ['investment', 'withdrawal', 'expense']
 
 function formatCurrency(num) {
   return new Intl.NumberFormat('en-BD').format(num || 0)
@@ -61,9 +62,10 @@ function SkeletonCard() {
   )
 }
 
-function TransactionCard({ tx }) {
+function TransactionCard({ tx, onEdit }) {
   const cfg = TX_TYPE_CONFIG[tx.type] || { label: tx.type, dot: 'bg-slate-400', bg: 'bg-slate-50 text-slate-600 border-slate-100', direction: 'out' }
   const isIn = cfg.direction === 'in'
+  const canEdit = MANUAL_TYPES.includes(tx.type)
 
   return (
     <div className="card p-4 flex flex-col gap-3 border border-slate-200 hover:border-slate-300 transition-colors">
@@ -75,9 +77,23 @@ function TransactionCard({ tx }) {
             {cfg.label}
           </span>
         </div>
-        <p className={`text-lg font-bold ${isIn ? 'text-emerald-600' : 'text-red-600'}`}>
-          {isIn ? '+' : '−'}৳{formatCurrency(tx.amount)}
-        </p>
+        <div className="flex items-center gap-2">
+          {canEdit && onEdit && (
+            <button
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              onClick={() => onEdit(tx)}
+              title="Edit"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+            </button>
+          )}
+          <p className={`text-lg font-bold ${isIn ? 'text-emerald-600' : 'text-red-600'}`}>
+            {isIn ? '+' : '−'}৳{formatCurrency(tx.amount)}
+          </p>
+        </div>
       </div>
 
       {/* Note */}
@@ -93,11 +109,12 @@ function TransactionCard({ tx }) {
   )
 }
 
-function AddTransaction({ onSuccess, onCancel }) {
-  const [txType, setTxType] = useState('investment')
-  const [amount, setAmount] = useState('')
-  const [note, setNote] = useState('')
-  const [txDate, setTxDate] = useState(new Date().toISOString().split('T')[0])
+function TransactionForm({ tx, onSuccess, onCancel }) {
+  // tx is null for add mode, or an object for edit mode
+  const isEdit = !!tx
+  const [txType, setTxType] = useState(tx?.type || 'investment')
+  const [amount, setAmount] = useState(tx ? String(tx.amount) : '')
+  const [note, setNote] = useState(tx?.note || '')
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
 
@@ -122,12 +139,27 @@ function AddTransaction({ onSuccess, onCancel }) {
     setErrors({})
     setLoading(true)
 
-    const { error } = await supabase.from('cash_transactions').insert({
+    const payload = {
       type: txType,
       amount: Number(amount),
       note: note.trim() || null,
-      transaction_date: txDate,
-    })
+    }
+
+    let error
+    if (isEdit) {
+      const { error: err } = await supabase
+        .from('cash_transactions')
+        .update(payload)
+        .eq('id', tx.id)
+      error = err
+    } else {
+      const today = new Date().toISOString().split('T')[0]
+      const { error: err } = await supabase.from('cash_transactions').insert({
+        ...payload,
+        transaction_date: today,
+      })
+      error = err
+    }
 
     setLoading(false)
     if (error) {
@@ -163,12 +195,16 @@ function AddTransaction({ onSuccess, onCancel }) {
                   : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
               }`}
               onClick={() => setTxType(t.value)}
+              disabled={isEdit}
             >
               {t.label}
             </button>
           ))}
         </div>
-        {TYPES.find(t => t.value === txType) && (
+        {isEdit && (
+          <p className="text-xs text-slate-400 mt-1">Type cannot be changed after creation</p>
+        )}
+        {!isEdit && TYPES.find(t => t.value === txType) && (
           <p className="text-xs text-slate-400 mt-1">
             {TYPES.find(t => t.value === txType).hint}
           </p>
@@ -205,17 +241,6 @@ function AddTransaction({ onSuccess, onCancel }) {
         {errors.note && <p className="mt-1 text-xs text-red-500">{errors.note}</p>}
       </div>
 
-      {/* Date */}
-      <div>
-        <label className="label">Date</label>
-        <input
-          type="date"
-          className="input"
-          value={txDate}
-          onChange={e => setTxDate(e.target.value)}
-        />
-      </div>
-
       {/* Actions */}
       <div className="flex items-center justify-end gap-2 pt-1">
         {onCancel && (
@@ -226,7 +251,7 @@ function AddTransaction({ onSuccess, onCancel }) {
           className="btn bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
           disabled={loading}
         >
-          {loading ? 'Adding…' : 'Add Transaction'}
+          {loading ? (isEdit ? 'Saving…' : 'Adding…') : isEdit ? 'Save Changes' : 'Add Transaction'}
         </button>
       </div>
     </form>
@@ -237,8 +262,9 @@ export default function CashBook() {
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [directionFilter, setDirectionFilter] = useState('all') // 'all' | 'in' | 'out'
-  const [showAddModal, setShowAddModal] = useState(false)
+  const [directionFilter, setDirectionFilter] = useState('all')
+  const [showModal, setShowModal] = useState(false)
+  const [editingTx, setEditingTx] = useState(null) // null = add mode, object = edit mode
   const [toast, setToast] = useState(null)
 
   const showToast = useCallback((msg, type = 'success') => {
@@ -254,18 +280,31 @@ export default function CashBook() {
       .order('transaction_date', { ascending: false })
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('CashBook fetch error:', error)
-    }
+    if (error) console.error('CashBook fetch error:', error)
     setTransactions(data || [])
     setLoading(false)
   }
 
   useEffect(() => { fetchTransactions() }, [])
 
-  async function handleAddSuccess() {
-    setShowAddModal(false)
-    showToast('Transaction added!')
+  function openAddModal() {
+    setEditingTx(null)
+    setShowModal(true)
+  }
+
+  function openEditModal(tx) {
+    setEditingTx(tx)
+    setShowModal(true)
+  }
+
+  function closeModal() {
+    setShowModal(false)
+    setEditingTx(null)
+  }
+
+  async function handleFormSuccess() {
+    closeModal()
+    showToast(editingTx ? 'Transaction updated!' : 'Transaction added!')
     fetchTransactions()
   }
 
@@ -274,13 +313,11 @@ export default function CashBook() {
     const matchSearch = !q || (tx.note || '').toLowerCase().includes(q)
     const cfg = TX_TYPE_CONFIG[tx.type]
     const dir = cfg?.direction || 'out'
-
     if (directionFilter === 'in') return matchSearch && dir === 'in'
     if (directionFilter === 'out') return matchSearch && dir === 'out'
     return matchSearch
   })
 
-  // Summary calculations
   const totalCashIn = transactions
     .filter(t => MONEY_IN_TYPES.includes(t.type))
     .reduce((s, t) => s + Number(t.amount || 0), 0)
@@ -305,7 +342,6 @@ export default function CashBook() {
 
   return (
     <div className="space-y-5">
-      {/* Toast */}
       {toast && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border ${
           toast.type === 'error'
@@ -363,10 +399,7 @@ export default function CashBook() {
           <option value="out">Money Out</option>
         </select>
 
-        <button
-          className="btn-primary ml-auto"
-          onClick={() => setShowAddModal(true)}
-        >
+        <button className="btn-primary ml-auto" onClick={openAddModal}>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
           </svg>
@@ -403,25 +436,28 @@ export default function CashBook() {
         )}
 
         {!loading && filtered.map(tx => (
-          <TransactionCard key={tx.id} tx={tx} />
+          <TransactionCard key={tx.id} tx={tx} onEdit={openEditModal} />
         ))}
       </div>
 
-      {/* Add Transaction Modal */}
-      {showAddModal && (
+      {/* Add / Edit Transaction Modal */}
+      {showModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="card w-full max-w-sm p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-slate-900">Add Transaction</h2>
-              <button className="btn-ghost btn-sm" onClick={() => setShowAddModal(false)}>
+              <h2 className="text-base font-semibold text-slate-900">
+                {editingTx ? 'Edit Transaction' : 'Add Transaction'}
+              </h2>
+              <button className="btn-ghost btn-sm" onClick={closeModal}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
                 </svg>
               </button>
             </div>
-            <AddTransaction
-              onSuccess={handleAddSuccess}
-              onCancel={() => setShowAddModal(false)}
+            <TransactionForm
+              tx={editingTx}
+              onSuccess={handleFormSuccess}
+              onCancel={closeModal}
             />
           </div>
         </div>
