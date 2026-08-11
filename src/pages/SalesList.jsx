@@ -55,12 +55,39 @@ export default function SalesList() {
   const [sales, setSales] = useState([])
   const [loading, setLoading] = useState(true)
   const [paymentFilter, setPaymentFilter] = useState('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [toast, setToast] = useState(null)
 
   const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 3000)
   }, [])
+
+  function setQuickFilter(preset) {
+    const today = new Date()
+    const fmt = d => d.toISOString().split('T')[0]
+    if (preset === 'today') {
+      setDateFrom(fmt(today))
+      setDateTo(fmt(today))
+    } else if (preset === 'this_week') {
+      const day = today.getDay() || 7
+      const monday = new Date(today)
+      monday.setDate(today.getDate() - day + 1)
+      const sunday = new Date(monday)
+      sunday.setDate(monday.getDate() + 6)
+      setDateFrom(fmt(monday))
+      setDateTo(fmt(sunday))
+    } else if (preset === 'this_month') {
+      const y = today.getFullYear(), m = today.getMonth()
+      setDateFrom(`${y}-${String(m+1).padStart(2,'0')}-01`)
+      const last = new Date(y, m+1, 0)
+      setDateTo(fmt(last))
+    } else if (preset === 'all') {
+      setDateFrom('')
+      setDateTo('')
+    }
+  }
 
   async function fetchSales() {
     setLoading(true)
@@ -86,8 +113,10 @@ export default function SalesList() {
   useEffect(() => { fetchSales() }, [])
 
   const filtered = sales.filter(s => {
-    if (paymentFilter === 'all') return true
-    return s.payment_type === paymentFilter
+    const matchPayment = paymentFilter === 'all' || s.payment_type === paymentFilter
+    const matchFrom = !dateFrom || (s.sale_date && s.sale_date >= dateFrom)
+    const matchTo   = !dateTo   || (s.sale_date && s.sale_date <= dateTo)
+    return matchPayment && matchFrom && matchTo
   })
 
   const totalSales  = filtered.length
@@ -129,7 +158,40 @@ export default function SalesList() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex items-center gap-2">
+          <div>
+            <label className="text-xs text-slate-500 font-medium mb-1 block">From</label>
+            <input
+              type="date"
+              className="input py-1.5 text-sm"
+              value={dateFrom}
+              onChange={e => setDateFrom(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500 font-medium mb-1 block">To</label>
+            <input
+              type="date"
+              className="input py-1.5 text-sm"
+              value={dateTo}
+              onChange={e => setDateTo(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {[['today','Today'],['this_week','This Week'],['this_month','This Month'],['all','All Time']].map(([val, label]) => (
+            <button
+              key={val}
+              className={`btn btn-sm ${(val === 'all' && !dateFrom && !dateTo) || (val === 'today' && dateFrom === new Date().toISOString().split('T')[0] && dateTo === new Date().toISOString().split('T')[0]) ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setQuickFilter(val)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <select
           className="input w-auto"
           value={paymentFilter}
