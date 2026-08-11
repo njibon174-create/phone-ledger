@@ -67,56 +67,48 @@ function SkeletonCard() {
   )
 }
 
-function EditHistoryPopover({ history }) {
-  const [open, setOpen] = useState(false)
+function EditHistorySection({ history }) {
+  const [expanded, setExpanded] = useState(false)
+  if (!history || history.length === 0) return null
 
   return (
-    <div className="relative">
+    <div className="border-t border-slate-100 pt-2">
       <button
-        className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-blue-600 transition-colors"
-        onClick={() => setOpen(o => !o)}
-        title="View edit history"
+        className="flex items-center justify-between w-full text-xs text-slate-400 hover:text-slate-600 transition-colors py-1"
+        onClick={() => setExpanded(v => !v)}
       >
-        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        <span className="inline-flex items-center gap-1">
+          <span className="text-blue-500">●</span>
+          {history.length} edit{history.length !== 1 ? 's' : ''} made
+        </span>
+        <svg
+          className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
         </svg>
-        Edited
       </button>
-      {open && (
-        <div className="absolute right-0 top-7 z-50 w-72 card shadow-xl border border-slate-200 p-4 space-y-3">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Edit History</p>
-            <button className="text-slate-400 hover:text-slate-600" onClick={() => setOpen(false)}>
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </button>
-          </div>
-          {history.length === 0 && (
-            <p className="text-xs text-slate-400">No edit history</p>
-          )}
-          {[...history].reverse().map(h => (
-            <div key={h.id} className="text-xs space-y-1 pb-3 border-b border-slate-100 last:border-0 last:pb-0">
-              <p className="text-slate-400">{formatDateTime(h.edited_at)}</p>
-              <div className="space-y-0.5">
+
+      {expanded && (
+        <div className="mt-2 space-y-2">
+          {history.map(h => (
+            <div key={h.id} className="flex items-center justify-between rounded-lg bg-slate-50 border border-slate-100 px-3 py-2">
+              <div>
                 {h.old_amount !== h.new_amount && (
-                  <p className="text-slate-700">
-                    Amount: <span className="line-through text-red-500">৳{formatCurrency(h.old_amount)}</span>
-                    {' → '}
-                    <span className="text-emerald-600 font-medium">৳{formatCurrency(h.new_amount)}</span>
+                  <p className="text-sm text-slate-700">
+                    ৳{formatCurrency(h.old_amount)} → <span className="font-medium text-slate-900">৳{formatCurrency(h.new_amount)}</span>
                   </p>
                 )}
                 {h.old_note !== h.new_note && (
-                  <p className="text-slate-700">
-                    Note: <span className="line-through">{h.old_note || '—'}</span>
-                    {' → '}
-                    <span className="font-medium">{h.new_note || '—'}</span>
+                  <p className="text-xs text-slate-400">
+                    {h.old_note || '—'} → <span className="text-slate-600">{h.new_note || '—'}</span>
                   </p>
                 )}
                 {h.old_amount === h.new_amount && h.old_note === h.new_note && (
-                  <p className="text-slate-400 italic">No visible changes recorded</p>
+                  <p className="text-xs text-slate-400 italic">No visible changes</p>
                 )}
               </div>
+              <p className="text-xs text-slate-400 whitespace-nowrap ml-3">{formatDateTime(h.edited_at)}</p>
             </div>
           ))}
         </div>
@@ -167,9 +159,11 @@ function TransactionCard({ tx, onEdit, editHistory }) {
       )}
 
       {/* Footer: Date + Edit history */}
-      <div className="flex items-center justify-between pt-1 border-t border-slate-100 mt-auto">
+      <div className="flex items-center justify-between pt-1 mt-auto">
         <p className="text-xs text-slate-400">{formatDate(tx.transaction_date)}</p>
-        {history.length > 0 && <EditHistoryPopover history={history} />}
+        {history.length > 0 && (
+          <EditHistorySection history={history} />
+        )}
       </div>
     </div>
   )
