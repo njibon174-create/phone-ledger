@@ -13,6 +13,12 @@ const STATUS_CONFIG = {
   cleared:   { label: 'Cleared',   bg: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
 }
 
+const CREDIT_STATUS_CONFIG = {
+  pending: { label: 'Unpaid', bg: 'bg-amber-50 text-amber-700 border-amber-100', dot: 'bg-amber-400' },
+  partial: { label: 'Partial', bg: 'bg-blue-50 text-blue-700 border-blue-100', dot: 'bg-blue-400' },
+  cleared: { label: 'Cleared', bg: 'bg-emerald-50 text-emerald-700 border-emerald-100', dot: 'bg-emerald-400' },
+}
+
 function formatCurrency(num) {
   return new Intl.NumberFormat('en-BD').format(num || 0)
 }
@@ -69,7 +75,8 @@ export default function SalesList() {
         status,
         sale_date,
         created_at,
-        phone:phones(brand, model, imei)
+        phone:phones(brand, model, imei),
+        credit:credits(id, status, remaining, paid_amount, total_due)
       `)
       .order('created_at', { ascending: false })
     setSales(data || [])
@@ -177,10 +184,26 @@ export default function SalesList() {
                   <p className="font-semibold text-slate-900 truncate">{phone?.brand} {phone?.model}</p>
                   <p className="font-mono text-xs text-slate-400 mt-0.5 tracking-wider">{phone?.imei || '—'}</p>
                 </div>
-                <span className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${pmtConfig.bg}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${pmtConfig.dot}`} />
-                  {pmtConfig.label}
-                </span>
+                <div className="shrink-0 flex flex-col items-end gap-1">
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${pmtConfig.bg}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${pmtConfig.dot}`} />
+                    {pmtConfig.label}
+                  </span>
+                  {sale.payment_type === 'baki' && sale.credit && (
+                    (() => {
+                      const creditStatus = Array.isArray(sale.credit)
+                        ? sale.credit.find(c => c)?.status
+                        : sale.credit.status
+                      const creditCfg = CREDIT_STATUS_CONFIG[creditStatus]
+                      if (!creditCfg) return null
+                      return (
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${creditCfg.bg}`}>
+                          {creditStatus === 'cleared' && '✓ '}{creditCfg.label}
+                        </span>
+                      )
+                    })()
+                  )}
+                </div>
               </div>
 
               {/* Sell Price */}
