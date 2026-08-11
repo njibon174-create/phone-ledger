@@ -9,21 +9,21 @@ const BRANDS = ['Samsung', 'Xiaomi', 'Realme', 'Vivo', 'Oppo', 'iTel', 'Symphony
 const STATUS_CONFIG = {
   in_stock: {
     label: 'In Stock',
-    dot: 'bg-emerald-400',
-    bg: 'bg-emerald-50 text-emerald-700',
-    border: 'border-emerald-100',
+    dot: 'bg-[#39FF88]',
+    bg: 'bg-[#39FF8820] text-[#39FF88] border-[#39FF8850]',
+    border: 'border-[#39FF8850]',
   },
   sold: {
     label: 'Sold',
-    dot: 'bg-blue-400',
-    bg: 'bg-blue-50 text-blue-700',
-    border: 'border-blue-100',
+    dot: 'bg-[#60A5FA]',
+    bg: 'bg-[#60A5FA20] text-[#60A5FA] border-[#60A5FA50]',
+    border: 'border-[#60A5FA50]',
   },
   returned: {
     label: 'Returned',
-    dot: 'bg-amber-400',
-    bg: 'bg-amber-50 text-amber-700',
-    border: 'border-amber-100',
+    dot: 'bg-[#FBBF24]',
+    bg: 'bg-[#FBBF2420] text-[#FBBF24] border-[#FBBF2450]',
+    border: 'border-[#FBBF2450]',
   },
 }
 
@@ -39,10 +39,10 @@ function formatDate(dateStr) {
 // Skeleton row for table
 function SkeletonRow() {
   return (
-    <tr className="border-b border-slate-100">
+    <tr className="border-b border-[#1E3A5F]">
       {[90, 100, 140, 80, 80, 80, 90, 100].map((w, i) => (
         <td key={i} className="px-4 py-3">
-          <div className="h-4 rounded bg-slate-100 animate-pulse" style={{ width: w }} />
+          <div className="h-4 rounded bg-[#1E2A3A] animate-pulse" style={{ width: w }} />
         </td>
       ))}
     </tr>
@@ -55,18 +55,18 @@ function SkeletonCard() {
     <div className="card p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between">
         <div className="space-y-1.5">
-          <div className="h-4 w-20 rounded bg-slate-100 animate-pulse" />
-          <div className="h-3 w-28 rounded bg-slate-100 animate-pulse" />
+          <div className="h-4 w-20 rounded bg-[#1E2A3A] animate-pulse" />
+          <div className="h-3 w-28 rounded bg-[#1E2A3A] animate-pulse" />
         </div>
-        <div className="h-5 w-16 rounded-full bg-slate-100 animate-pulse" />
+        <div className="h-5 w-16 rounded-full bg-[#1E2A3A] animate-pulse" />
       </div>
-      <div className="h-5 w-36 rounded bg-slate-100 animate-pulse" />
+      <div className="h-5 w-36 rounded bg-[#1E2A3A] animate-pulse" />
       <div className="flex gap-4">
-        {[60, 60, 60].map((w, i) => <div key={i} className="space-y-1"><div className="h-3 w-8 rounded bg-slate-100 animate-pulse" /><div className="h-4 w-16 rounded bg-slate-100 animate-pulse" /></div>)}
+        {[60, 60, 60].map((w, i) => <div key={i} className="space-y-1"><div className="h-3 w-8 rounded bg-[#1E2A3A] animate-pulse" /><div className="h-4 w-16 rounded bg-[#1E2A3A] animate-pulse" /></div>)}
       </div>
-      <div className="flex gap-2 pt-1 border-t border-slate-100">
-        <div className="h-7 w-full rounded-lg bg-slate-100 animate-pulse" />
-        <div className="h-7 w-16 rounded-lg bg-slate-100 animate-pulse" />
+      <div className="flex gap-2 pt-1 border-t border-[#1E3A5F]">
+        <div className="h-7 w-full rounded-lg bg-[#1E2A3A] animate-pulse" />
+        <div className="h-7 w-16 rounded-lg bg-[#1E2A3A] animate-pulse" />
       </div>
     </div>
   )
@@ -170,8 +170,8 @@ export default function InventoryList() {
       {toast && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border ${
           toast.type === 'error'
-            ? 'bg-red-50 text-red-700 border-red-100'
-            : 'bg-emerald-50 text-emerald-700 border-emerald-100'
+            ? 'bg-[#F8717120] text-[#F87171] border-[#F8717150]'
+            : 'bg-[#39FF8820] text-[#39FF88] border-[#39FF8850]'
         }`}>
           {toast.msg}
         </div>
@@ -192,7 +192,7 @@ export default function InventoryList() {
       {/* Filters + Search */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[180px]">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
           <input
@@ -204,7 +204,7 @@ export default function InventoryList() {
           />
           {search && (
             <button
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#E5E7EB] p-0.5"
               onClick={() => setSearch('')}
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -240,15 +240,15 @@ export default function InventoryList() {
         </select>
 
         {/* View Toggle */}
-        <div className="flex rounded-lg border border-slate-200 overflow-hidden shrink-0">
+        <div className="flex rounded-lg border border-[#1E3A5F] overflow-hidden shrink-0">
           <button
-            className={`px-3 py-2 text-xs font-medium transition-colors ${viewMode === 'table' ? 'bg-slate-100 text-slate-700' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`px-3 py-2 text-xs font-medium transition-colors ${viewMode === 'table' ? 'bg-[#1E2A3A] text-[#E5E7EB]' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'}`}
             onClick={() => setViewMode('table')}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M3 6h18M3 18h18"/></svg>
           </button>
           <button
-            className={`px-3 py-2 text-xs font-medium transition-colors border-l border-slate-200 ${viewMode === 'cards' ? 'bg-slate-100 text-slate-700' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`px-3 py-2 text-xs font-medium transition-colors border-l border-[#1E3A5F] ${viewMode === 'cards' ? 'bg-[#1E2A3A] text-[#E5E7EB]' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'}`}
             onClick={() => setViewMode('cards')}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
@@ -258,7 +258,7 @@ export default function InventoryList() {
 
       {/* Result count */}
       {!loading && (
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-[#9CA3AF]">
           {isEmpty
             ? isSearchActive ? 'No phones match your filters' : 'No phones in inventory'
             : `Showing ${filtered.length} of ${phones.length} phone${phones.length !== 1 ? 's' : ''}`
@@ -271,7 +271,7 @@ export default function InventoryList() {
         <div className="table-container">
           <table className="table">
             <thead>
-              <tr className="border-b border-slate-200">
+              <tr className="border-b border-[#1E3A5F]">
                 <th>Brand</th>
                 <th>Model</th>
                 <th>IMEI</th>
@@ -289,14 +289,14 @@ export default function InventoryList() {
                 <tr>
                   <td colSpan={8} className="text-center py-16">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
-                        <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-12 h-12 rounded-2xl bg-[#1E2A3A] flex items-center justify-center">
+                        <svg className="w-6 h-6 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                         </svg>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-600">No phones in inventory yet</p>
-                        <p className="text-xs text-slate-400 mt-0.5">Click <span className="font-medium text-slate-500">Add Phone</span> to get started</p>
+                        <p className="text-sm font-medium text-[#E5E7EB]">No phones in inventory yet</p>
+                        <p className="text-xs text-[#9CA3AF] mt-0.5">Click <span className="font-medium text-[#9CA3AF]">Add Phone</span> to get started</p>
                       </div>
                     </div>
                   </td>
@@ -307,14 +307,14 @@ export default function InventoryList() {
                 <tr>
                   <td colSpan={8} className="text-center py-16">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-12 h-12 rounded-2xl bg-[#1E2A3A] flex items-center justify-center">
+                        <svg className="w-5 h-5 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-600">No phones match your filters</p>
-                        <p className="text-xs text-slate-400 mt-0.5">Try adjusting search or filter criteria</p>
+                        <p className="text-sm font-medium text-[#E5E7EB]">No phones match your filters</p>
+                        <p className="text-xs text-[#9CA3AF] mt-0.5">Try adjusting search or filter criteria</p>
                       </div>
                     </div>
                   </td>
@@ -324,25 +324,25 @@ export default function InventoryList() {
               {!loading && filtered.map(phone => (
                 <tr
                   key={phone.id}
-                  className="border-b border-slate-100 last:border-0 transition-colors duration-75 hover:bg-slate-50/70"
+                  className="border-b border-[#1E3A5F] last:border-0 transition-colors duration-75 hover:bg-[#1E2A3A]/50"
                 >
-                  <td className="font-medium text-slate-900">{phone.brand}</td>
-                  <td className="text-slate-600">{phone.model}</td>
-                  <td className="font-mono text-xs text-slate-400 tracking-wider">{phone.imei}</td>
-                  <td className="text-slate-700">৳{formatCurrency(phone.buy_price)}</td>
-                  <td className="text-slate-700">৳{formatCurrency(phone.mrp)}</td>
+                  <td className="font-medium text-[#E5E7EB]">{phone.brand}</td>
+                  <td className="text-[#9CA3AF]">{phone.model}</td>
+                  <td className="font-mono text-xs text-[#9CA3AF] tracking-wider">{phone.imei}</td>
+                  <td className="text-[#E5E7EB]">৳{formatCurrency(phone.buy_price)}</td>
+                  <td className="text-[#E5E7EB]">৳{formatCurrency(phone.mrp)}</td>
                   <td>
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${STATUS_CONFIG[phone.status]?.bg || 'bg-slate-50 text-slate-600 border-slate-100'}`}>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${STATUS_CONFIG[phone.status]?.bg || 'bg-[#1E2A3A] text-[#E5E7EB] border-[#1E3A5F]'}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CONFIG[phone.status]?.dot || 'bg-slate-400'}`} />
                       {STATUS_CONFIG[phone.status]?.label || phone.status}
                     </span>
                   </td>
-                  <td className="text-slate-400 text-xs">{formatDate(phone.added_date)}</td>
+                  <td className="text-[#9CA3AF] text-xs">{formatDate(phone.added_date)}</td>
                   <td className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       {phone.status === 'in_stock' && (
                         <button
-                          className="btn btn-sm bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100"
+                          className="btn btn-sm bg-[#39FF8820] text-[#39FF88] border border-[#39FF8850] hover:bg-[#39FF8830]"
                           onClick={() => setSellPhone(phone)}
                           title="Sell"
                         >
@@ -354,7 +354,7 @@ export default function InventoryList() {
                       )}
                       {phone.status === 'in_stock' && (
                         <button
-                          className="btn-ghost btn-sm text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                          className="btn-ghost btn-sm text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-[#1E2A3A]"
                           onClick={() => setEditPhone(phone)}
                           title="Edit"
                         >
@@ -365,7 +365,7 @@ export default function InventoryList() {
                       )}
                       {phone.status === 'in_stock' ? (
                         <button
-                          className="btn-ghost btn-sm text-red-400 hover:text-red-600 hover:bg-red-50"
+                          className="btn-ghost btn-sm text-[#F87171] hover:text-[#F87171] hover:bg-[#F8717120]"
                           onClick={() => setDeleteConfirm(phone)}
                           title="Delete"
                         >
@@ -392,41 +392,41 @@ export default function InventoryList() {
 
           {!loading && phones.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center py-20 gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
-                <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 rounded-2xl bg-[#1E2A3A] flex items-center justify-center">
+                <svg className="w-8 h-8 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                 </svg>
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-slate-600">No phones in inventory yet</p>
-                <p className="text-xs text-slate-400 mt-1">Click <span className="font-medium text-slate-500">Add Phone</span> to get started</p>
+                <p className="text-sm font-medium text-[#E5E7EB]">No phones in inventory yet</p>
+                <p className="text-xs text-[#9CA3AF] mt-1">Click <span className="font-medium text-[#9CA3AF]">Add Phone</span> to get started</p>
               </div>
             </div>
           )}
 
           {!loading && phones.length > 0 && filtered.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center py-20 gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
-                <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 rounded-2xl bg-[#1E2A3A] flex items-center justify-center">
+                <svg className="w-8 h-8 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-slate-600">No phones match your filters</p>
-                <p className="text-xs text-slate-400 mt-1">Try adjusting search or filter criteria</p>
+                <p className="text-sm font-medium text-[#E5E7EB]">No phones match your filters</p>
+                <p className="text-xs text-[#9CA3AF] mt-1">Try adjusting search or filter criteria</p>
               </div>
             </div>
           )}
 
           {!loading && filtered.map(phone => (
-            <div key={phone.id} className="card p-4 flex flex-col gap-3 border border-slate-200 hover:border-slate-300 transition-colors">
+            <div key={phone.id} className="card p-4 flex flex-col gap-3 border border-[#1E3A5F] hover:border-[#39FF8850] transition-colors">
               {/* Header */}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-semibold text-slate-900 truncate">{phone.brand}</p>
-                  <p className="text-sm text-slate-500 truncate">{phone.model}</p>
+                  <p className="font-semibold text-[#E5E7EB] truncate">{phone.brand}</p>
+                  <p className="text-sm text-[#9CA3AF] truncate">{phone.model}</p>
                 </div>
-                <span className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${STATUS_CONFIG[phone.status]?.bg || 'bg-slate-50 text-slate-600 border-slate-100'}`}>
+                <span className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${STATUS_CONFIG[phone.status]?.bg || 'bg-[#1E2A3A] text-[#E5E7EB] border-[#1E3A5F]'}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CONFIG[phone.status]?.dot || 'bg-slate-400'}`} />
                   {STATUS_CONFIG[phone.status]?.label || phone.status}
                 </span>
@@ -434,7 +434,7 @@ export default function InventoryList() {
 
               {/* IMEI */}
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100 truncate flex-1 tracking-wider">
+                <span className="font-mono text-xs text-[#9CA3AF] bg-[#1E2A3A] px-2 py-1 rounded border border-[#1E3A5F] truncate flex-1 tracking-wider">
                   {phone.imei}
                 </span>
               </div>
@@ -442,24 +442,24 @@ export default function InventoryList() {
               {/* Prices + Date */}
               <div className="flex items-end gap-4">
                 <div>
-                  <p className="text-xs text-slate-400 font-medium">Buy Price</p>
-                  <p className="text-sm font-semibold text-slate-800">৳{formatCurrency(phone.buy_price)}</p>
+                  <p className="text-xs text-[#9CA3AF] font-medium">Buy Price</p>
+                  <p className="text-sm font-semibold text-[#E5E7EB]">৳{formatCurrency(phone.buy_price)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 font-medium">MRP</p>
-                  <p className="text-sm font-semibold text-slate-800">৳{formatCurrency(phone.mrp)}</p>
+                  <p className="text-xs text-[#9CA3AF] font-medium">MRP</p>
+                  <p className="text-sm font-semibold text-[#E5E7EB]">৳{formatCurrency(phone.mrp)}</p>
                 </div>
                 <div className="ml-auto text-right">
-                  <p className="text-xs text-slate-400 font-medium">Added</p>
-                  <p className="text-xs font-medium text-slate-500">{formatDate(phone.added_date)}</p>
+                  <p className="text-xs text-[#9CA3AF] font-medium">Added</p>
+                  <p className="text-xs font-medium text-[#9CA3AF]">{formatDate(phone.added_date)}</p>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+              <div className="flex items-center gap-2 pt-2 border-t border-[#1E3A5F]">
                 {phone.status === 'in_stock' && (
                   <button
-                    className="btn btn-sm flex-1 justify-center bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100"
+                    className="btn btn-sm flex-1 justify-center bg-[#39FF8820] text-[#39FF88] border border-[#39FF8850] hover:bg-[#39FF8830]"
                     onClick={() => setSellPhone(phone)}
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -490,7 +490,7 @@ export default function InventoryList() {
                     Delete
                   </button>
                 ) : (
-                  <div className="px-3 py-1.5 text-xs text-slate-300 rounded-lg border border-slate-100 text-center">
+                  <div className="px-3 py-1.5 text-xs text-[#9CA3AF] rounded-lg border border-[#1E3A5F] text-center">
                     Sold
                   </div>
                 )}
@@ -504,7 +504,7 @@ export default function InventoryList() {
       {editPhone && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="card w-full max-w-md p-6 shadow-2xl">
-            <h2 className="text-base font-semibold text-slate-900 mb-4">Edit Phone</h2>
+            <h2 className="text-base font-semibold text-[#E5E7EB] mb-4">Edit Phone</h2>
             <EditPhone
               phone={editPhone}
               onSuccess={() => { setEditPhone(null); showToast('Phone updated successfully.'); fetchPhones() }}
@@ -518,7 +518,7 @@ export default function InventoryList() {
       {sellPhone && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="card w-full max-w-md p-6 shadow-2xl">
-            <h2 className="text-base font-semibold text-slate-900 mb-4">Sell Phone</h2>
+            <h2 className="text-base font-semibold text-[#E5E7EB] mb-4">Sell Phone</h2>
             <SellPhone
               phone={sellPhone}
               onSuccess={handleSaleSuccess}
@@ -533,20 +533,20 @@ export default function InventoryList() {
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="card w-full max-w-sm p-6 shadow-2xl space-y-4">
             <div>
-              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center mb-3">
-                <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 rounded-xl bg-[#F8717120] flex items-center justify-center mb-3">
+                <svg className="w-5 h-5 text-[#F87171]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                 </svg>
               </div>
-              <h2 className="text-base font-semibold text-slate-900">Delete Phone?</h2>
-              <p className="text-sm text-slate-500 mt-1">
-                IMEI <span className="font-mono text-slate-700">{deleteConfirm.imei}</span> ({deleteConfirm.brand} {deleteConfirm.model}) will be permanently removed.
+              <h2 className="text-base font-semibold text-[#E5E7EB]">Delete Phone?</h2>
+              <p className="text-sm text-[#9CA3AF] mt-1">
+                IMEI <span className="font-mono text-[#E5E7EB]">{deleteConfirm.imei}</span> ({deleteConfirm.brand} {deleteConfirm.model}) will be permanently removed.
               </p>
             </div>
             <div className="flex gap-2 justify-end pt-1">
               <button className="btn-secondary" onClick={() => setDeleteConfirm(null)}>Cancel</button>
               <button
-                className="btn bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                className="btn bg-[#F8717120] text-[#F87171] border border-[#F8717150] hover:bg-[#F8717130] disabled:opacity-40"
                 disabled={deleting}
                 onClick={() => handleDelete(deleteConfirm)}
               >

@@ -80,15 +80,15 @@ export default function AddPayment({ credit, onSuccess, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {errors._form && (
-        <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-100 text-sm text-red-600">
+        <div className="px-4 py-3 rounded-lg bg-[#F8717120] border border-[#F8717150] text-sm text-[#F87171]">
           {errors._form}
         </div>
       )}
 
       {/* Remaining info */}
-      <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
-        <p className="text-xs text-slate-500 font-medium mb-1">Remaining Balance</p>
-        <p className="text-2xl font-bold text-slate-900">৳{formatCurrency(remaining)}</p>
+      <div className="rounded-xl bg-[#1E2A3A] border border-[#1E3A5F] p-4">
+        <p className="text-xs text-[#9CA3AF] font-medium mb-1">Remaining Balance</p>
+        <p className="text-2xl font-bold text-[#E5E7EB]">৳{formatCurrency(remaining)}</p>
       </div>
 
       {/* Payment Amount */}
@@ -137,7 +137,7 @@ export default function AddPayment({ credit, onSuccess, onCancel }) {
         })}
         <button
           type="button"
-          className="btn btn-sm bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100"
+          className="btn btn-sm bg-[#39FF8820] text-[#39FF88] border border-[#39FF8850] hover:bg-[#39FF8820]"
           onClick={() => setAmount(String(remaining))}
         >
           Clear Full ৳{formatCurrency(remaining)}
@@ -151,7 +151,7 @@ export default function AddPayment({ credit, onSuccess, onCancel }) {
         )}
         <button
           type="submit"
-          className="btn bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="btn bg-[#39FF8840] text-[#39FF88] border border-[#39FF8850] hover:bg-[#39FF8850] disabled:opacity-50"
           disabled={loading}
         >
           {loading ? 'Recording…' : 'Record Payment'}

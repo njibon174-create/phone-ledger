@@ -82,23 +82,27 @@ export default function App() {
   const { title: pageTitle, sub: pageSub } = PAGE_TITLES[activeTab] || {}
 
   return (
-    <div className="min-h-screen flex bg-main-bg">
+    <div className="min-h-screen flex" style={{ backgroundColor: '#111827' }}>
       {/* Sidebar — desktop */}
-      <aside className="hidden md:flex flex-col w-60 shrink-0 bg-sec-bg border-r border-border">
+      <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-gray-700"
+        style={{ backgroundColor: '#111827' }}>
         {/* Gradient accent bar */}
-        <div className="h-1 w-full bg-gradient-to-r from-primary to-transparent shrink-0" />
+        <div className="h-1 w-full bg-gradient-to-r from-neon-green to-neon-blue shrink-0" />
 
         {/* Logo */}
         <div className="px-5 pt-6 pb-4">
           <div className="flex items-center gap-2.5 mb-1">
-            <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center">
-              <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: 'rgba(0, 255, 136, 0.15)', boxShadow: '0 0 12px rgba(0, 255, 136, 0.2)' }}
+            >
+              <svg className="w-4 h-4" style={{ color: '#00FF88' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
               </svg>
             </div>
-            <h1 className="text-sm font-bold text-main-text tracking-tight">PhoneLedger</h1>
+            <h1 className="text-sm font-bold" style={{ color: '#00FF88' }}>PhoneLedger</h1>
           </div>
-          <p className="text-xs text-muted-text ml-9">Business Dashboard</p>
+          <p className="text-xs ml-9" style={{ color: '#00D4FF' }}>Business Dashboard</p>
         </div>
 
         {/* Nav */}
@@ -109,27 +113,32 @@ export default function App() {
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 relative ${
                 activeTab === item.id
-                  ? 'bg-primary/15 text-primary'
-                  : 'text-sec-text hover:bg-elev-bg hover:text-main-text'
+                  ? 'bg-neon-green/10'
+                  : 'text-gray-400 hover:bg-gray-800'
               }`}
+              style={activeTab !== item.id ? { color: '#9CA3AF' } : {}}
             >
               {activeTab === item.id && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-r-full" />
+                <div
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full"
+                  style={{ backgroundColor: '#00FF88', boxShadow: '0 0 8px rgba(0, 255, 136, 0.6)' }}
+                />
               )}
-              <span className={activeTab === item.id ? 'text-primary' : 'text-sec-text'}>{item.icon}</span>
-              <span>{item.label}</span>
+              <span style={{ color: activeTab === item.id ? '#00FF88' : '#9CA3AF' }}>{item.icon}</span>
+              <span style={{ color: activeTab === item.id ? '#00FF88' : '#9CA3AF' }}>{item.label}</span>
             </button>
           ))}
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-border px-5 py-4">
-          <p className="text-xs text-muted-text">v1.0 — PhoneLedger</p>
+        <div className="border-t border-gray-700 px-5 py-4">
+          <p className="text-xs" style={{ color: '#6B7280' }}>v1.0 — PhoneLedger</p>
         </div>
       </aside>
 
       {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-30 flex items-center gap-3 bg-sec-bg border-b border-border px-4 py-3">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-30 flex items-center gap-3 border-b px-4 py-3"
+        style={{ backgroundColor: '#111827', borderColor: '#374151' }}>
         <button
           className="btn-ghost btn-sm"
           onClick={() => setSidebarOpen(true)}
@@ -139,12 +148,15 @@ export default function App() {
           </svg>
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-primary/20 flex items-center justify-center">
-            <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div
+            className="w-6 h-6 rounded-md flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(0, 255, 136, 0.15)', boxShadow: '0 0 8px rgba(0, 255, 136, 0.2)' }}
+          >
+            <svg className="w-3.5 h-3.5" style={{ color: '#00FF88' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
             </svg>
           </div>
-          <h1 className="text-sm font-bold text-main-text">PhoneLedger</h1>
+          <h1 className="text-sm font-bold" style={{ color: '#00FF88' }}>PhoneLedger</h1>
         </div>
       </div>
 
@@ -152,15 +164,21 @@ export default function App() {
       {sidebarOpen && (
         <div className="md:hidden fixed inset-0 z-40 flex">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-          <aside className="relative w-64 bg-sec-bg pt-6 px-3 shadow-xl flex flex-col">
+          <aside
+            className="relative w-64 pt-6 px-3 shadow-xl flex flex-col"
+            style={{ backgroundColor: '#111827' }}
+          >
             <div className="px-3 mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: 'rgba(0, 255, 136, 0.15)', boxShadow: '0 0 12px rgba(0, 255, 136, 0.2)' }}
+                >
+                  <svg className="w-4 h-4" style={{ color: '#00FF88' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                   </svg>
                 </div>
-                <h1 className="text-sm font-bold text-main-text">PhoneLedger</h1>
+                <h1 className="text-sm font-bold" style={{ color: '#00FF88' }}>PhoneLedger</h1>
               </div>
               <button className="btn-ghost btn-sm" onClick={() => setSidebarOpen(false)}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,7 +186,7 @@ export default function App() {
                 </svg>
               </button>
             </div>
-            <div className="h-px bg-border mx-3 mb-4" />
+            <div className="h-px mx-3 mb-4" style={{ backgroundColor: '#374151' }} />
             <nav className="flex-1 px-2 space-y-0.5">
               {NAV.map(item => (
                 <button
@@ -176,14 +194,15 @@ export default function App() {
                   onClick={() => { setActiveTab(item.id); setSidebarOpen(false) }}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     activeTab === item.id
-                      ? 'bg-primary/15 text-primary'
-                      : 'text-sec-text hover:bg-elev-bg hover:text-main-text'
+                      ? 'bg-neon-green/10'
+                      : 'text-gray-400 hover:bg-gray-800'
                   }`}
+                  style={activeTab !== item.id ? { color: '#9CA3AF' } : {}}
                 >
-                  {item.icon}
+                  <span style={{ color: activeTab === item.id ? '#00FF88' : '#9CA3AF' }}>{item.icon}</span>
                   <div className="text-left">
-                    <p>{item.label}</p>
-                    <p className="text-xs text-muted-text font-normal">{item.desc}</p>
+                    <p style={{ color: activeTab === item.id ? '#00FF88' : '#D1D5DB' }}>{item.label}</p>
+                    <p className="text-xs font-normal" style={{ color: '#6B7280' }}>{item.desc}</p>
                   </div>
                 </button>
               ))}
@@ -201,13 +220,18 @@ export default function App() {
           {/* Page header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-xl font-bold text-main-text">{pageTitle}</h2>
-              <p className="text-sm text-sec-text mt-0.5">{pageSub}</p>
+              <h2 className="text-xl font-bold" style={{ color: '#E5E7EB' }}>{pageTitle}</h2>
+              <p className="text-sm mt-0.5" style={{ color: '#9CA3AF' }}>{pageSub}</p>
             </div>
             {activeTab === 'inventory' && (
               <button
                 className="btn-primary"
                 onClick={() => setActiveTab('add')}
+                style={{
+                  background: 'linear-gradient(135deg, #00FF88, #00D4FF)',
+                  border: 'none',
+                  boxShadow: '0 0 16px rgba(0, 255, 136, 0.3), 0 0 16px rgba(0, 212, 255, 0.2)'
+                }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
@@ -221,7 +245,7 @@ export default function App() {
           {activeTab === 'add' && (
             <div className="max-w-lg">
               <div className="card p-6">
-                <h3 className="text-base font-semibold text-main-text mb-4">Add New Phone</h3>
+                <h3 className="text-base font-semibold mb-4" style={{ color: '#E5E7EB' }}>Add New Phone</h3>
                 <AddPhone
                   onSuccess={handleAddSuccess}
                   onCancel={() => setActiveTab('inventory')}

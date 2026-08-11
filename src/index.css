@@ -4,19 +4,20 @@
 
 @layer base {
   :root {
-    --bg-primary: #070A0F;
-    --bg-secondary: #0C1118;
-    --bg-card: #111720;
-    --bg-elevated: #151D28;
-    --border: #202A36;
-    --primary: #4F8CFF;
-    --primary-glow: '#4F8CFF22';
-    --success: #20D69A;
-    --warning: #FFB84D;
-    --danger: #FF5C6C;
-    --text-primary: #F4F7FB;
-    --text-secondary: #8995A5;
-    --text-muted: #566170;
+    --neon-green: #00FF88;
+    --neon-blue: #00D4FF;
+    --neon-green-dim: #00FF8833;
+    --neon-blue-dim: #00D4FF33;
+    --bg-primary: #0A0E1A;
+    --bg-secondary: #111827;
+    --bg-card: #111827;
+    --bg-elevated: #1E2A3A;
+    --border: #1E3A5F;
+    --neon-green-glow: #00FF8844;
+    --neon-blue-glow: #00D4FF44;
+    --text-primary: #F0F8FF;
+    --text-secondary: #7EB8DA;
+    --text-muted: #4A7A9B;
   }
 
   html {
@@ -25,15 +26,15 @@
   }
 
   body {
-    background-color: #070A0F;
-    color: #F4F7FB;
+    background-color: #0A0E1A;
+    color: #F0F8FF;
   }
 
-  /* Custom scrollbar */
+  /* Neon glow scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: #0C1118; }
-  ::-webkit-scrollbar-thumb { background: #202A36; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #4F8CFF44; }
+  ::-webkit-scrollbar-track { background: #111827; }
+  ::-webkit-scrollbar-thumb { background: #1E3A5F; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #00D4FF66; }
 }
 
 @layer components {
@@ -41,16 +42,21 @@
     @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed;
   }
   .btn-primary {
-    @apply btn bg-primary text-white hover:brightness-110 active:scale-[0.97] shadow-lg shadow-primary/20;
+    @apply btn text-black font-bold shadow-lg shadow-neon-green/30;
+    background: linear-gradient(135deg, #00FF88, #00D4FF);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 0 20px #00FF8866, 0 0 40px #00D4FF33;
   }
   .btn-secondary {
-    @apply btn bg-elev-bg text-main-text border border-border hover:bg-card-bg active:scale-[0.97];
+    @apply btn bg-elev-bg text-main-text border border-border hover:border-neon-blue/50 hover:bg-card-light active:scale-[0.97];
   }
   .btn-danger {
-    @apply btn bg-danger/10 text-danger border border-danger/20 hover:bg-danger/20 active:scale-[0.97];
+    @apply btn bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 active:scale-[0.97];
   }
   .btn-ghost {
-    @apply btn text-sec-text hover:bg-elev-bg hover:text-main-text;
+    @apply btn text-sec-text hover:bg-elev-bg hover:text-neon-blue;
   }
   .btn-sm {
     @apply px-3 py-1.5 text-xs;
@@ -58,11 +64,11 @@
 
   .input {
     @apply w-full px-3 py-2 rounded-lg border border-border text-sm text-main-text placeholder-muted-text bg-sec-bg
-           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary
+           focus:outline-none focus:ring-2 focus:ring-neon-blue/30 focus:border-neon-blue
            transition-all duration-150;
   }
   .input-error {
-    @apply border-danger focus:ring-danger/30 focus:border-danger;
+    @apply border-red-500 focus:ring-red-500/30 focus:border-red-500;
   }
 
   .label {
@@ -70,11 +76,11 @@
   }
 
   .card {
-    @apply bg-card-bg rounded-xl border border-border;
+    @apply bg-card-bg rounded-xl border border-border shadow-lg;
   }
 
   .table-container {
-    @apply w-full overflow-x-auto rounded-xl border border-border bg-card-bg;
+    @apply w-full overflow-x-auto rounded-xl border border-border bg-card-bg shadow-lg;
   }
   .table {
     @apply w-full text-sm text-left;
@@ -83,7 +89,7 @@
     @apply bg-elev-bg border-b border-border;
   }
   .table th {
-    @apply px-4 py-3 text-xs font-semibold text-sec-text uppercase tracking-wide;
+    @apply px-4 py-3 text-xs font-semibold text-neon-blue uppercase tracking-wide;
   }
   .table td {
     @apply px-4 py-3 text-main-text border-b border-border/50;
@@ -99,13 +105,13 @@
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
   }
   .badge-success {
-    @apply badge bg-success/15 text-success;
+    @apply badge bg-neon-green/15 text-neon-green border border-neon-green/20;
   }
   .badge-warning {
-    @apply badge bg-warning/15 text-warning;
+    @apply badge bg-yellow-500/15 text-yellow-400 border border-yellow-500/20;
   }
   .badge-danger {
-    @apply badge bg-danger/15 text-danger;
+    @apply badge bg-red-500/15 text-red-400 border border-red-500/20;
   }
   .badge-slate {
     @apply badge bg-elev-bg text-sec-text border border-border;
@@ -113,11 +119,12 @@
 
   .stat-card {
     @apply card px-5 py-4 flex flex-col gap-1;
+    background: linear-gradient(135deg, #111827, #1E2A3A);
   }
   .stat-label {
     @apply text-xs font-medium text-sec-text uppercase tracking-wide;
   }
   .stat-value {
-    @apply text-2xl font-bold text-main-text;
+    @apply text-2xl font-bold text-neon-green;
   }
 }

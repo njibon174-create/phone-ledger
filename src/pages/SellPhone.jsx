@@ -88,16 +88,16 @@ export default function SellPhone({ phone, onSuccess, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {errors._form && (
-        <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-100 text-sm text-red-600">
+        <div className="px-4 py-3 rounded-lg bg-[#F8717120] border border-[#F8717150] text-sm text-[#F87171]">
           {errors._form}
         </div>
       )}
 
       {/* Phone Info */}
-      <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-1.5">
-        <p className="text-sm font-semibold text-slate-800">{phone.brand} {phone.model}</p>
-        <p className="font-mono text-xs text-slate-400">{phone.imei}</p>
-        <p className="text-sm text-slate-500">MRP: ৳{formatCurrency(phone.mrp)}</p>
+      <div className="rounded-xl bg-[#1E2A3A] border border-[#1E3A5F] p-4 space-y-1.5">
+        <p className="text-sm font-semibold text-[#E5E7EB]">{phone.brand} {phone.model}</p>
+        <p className="font-mono text-xs text-[#9CA3AF]">{phone.imei}</p>
+        <p className="text-sm text-[#9CA3AF]">MRP: ৳{formatCurrency(phone.mrp)}</p>
       </div>
 
       {/* Sell Price */}
@@ -118,13 +118,13 @@ export default function SellPhone({ phone, onSuccess, onCancel }) {
       {/* Payment Type Toggle */}
       <div>
         <label className="label">Payment Type</label>
-        <div className="flex rounded-xl border border-slate-200 overflow-hidden">
+        <div className="flex rounded-xl border border-[#1E3A5F] overflow-hidden">
           <button
             type="button"
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all ${
               paymentType === 'cash'
-                ? 'bg-emerald-50 text-emerald-700 border-r border-slate-200'
-                : 'bg-white text-slate-500 hover:bg-slate-50'
+                ? 'bg-[#39FF8820] text-[#39FF88] border-r border-[#1E3A5F]'
+                : 'bg-[#111827] text-[#9CA3AF] hover:bg-[#1E2A3A]'
             }`}
             onClick={() => setPaymentType('cash')}
           >
@@ -137,8 +137,8 @@ export default function SellPhone({ phone, onSuccess, onCancel }) {
             type="button"
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all ${
               paymentType === 'baki'
-                ? 'bg-amber-50 text-amber-700'
-                : 'bg-white text-slate-500 hover:bg-slate-50'
+                ? 'bg-[#FBBF2420] text-[#FBBF24]'
+                : 'bg-[#111827] text-[#9CA3AF] hover:bg-[#1E2A3A]'
             }`}
             onClick={() => setPaymentType('baki')}
           >
@@ -152,8 +152,8 @@ export default function SellPhone({ phone, onSuccess, onCancel }) {
 
       {/* Baki Fields */}
       {paymentType === 'baki' && (
-        <div className="space-y-3 p-4 rounded-xl bg-amber-50/50 border border-amber-100">
-          <p className="text-xs font-medium text-amber-600 uppercase tracking-wide">Buyer Info (Required for Credit)</p>
+        <div className="space-y-3 p-4 rounded-xl bg-[#FBBF2420]/50 border border-[#FBBF2450]">
+          <p className="text-xs font-medium text-[#FBBF24] uppercase tracking-wide">Buyer Info (Required for Credit)</p>
           <div>
             <label className="label">Buyer Name *</label>
             <input
@@ -182,10 +182,10 @@ export default function SellPhone({ phone, onSuccess, onCancel }) {
       {sellPrice && Number(sellPrice) > 0 && (
         <div className={`rounded-lg px-4 py-2.5 text-sm flex items-center justify-between ${
           Number(sellPrice) > phone.buy_price
-            ? 'bg-emerald-50 text-emerald-700'
+            ? 'bg-[#39FF8820] text-[#39FF88]'
             : Number(sellPrice) < phone.buy_price
-              ? 'bg-red-50 text-red-600'
-              : 'bg-slate-50 text-slate-500'
+              ? 'bg-[#F8717120] text-[#F87171]'
+              : 'bg-[#1E2A3A] text-[#9CA3AF]'
         }`}>
           <span className="text-xs font-medium">
             {Number(sellPrice) > phone.buy_price ? 'Profit' : Number(sellPrice) < phone.buy_price ? 'Loss' : 'Break-even'}
