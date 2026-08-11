@@ -1,6 +1,18 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
+// jsPDF + jspdf-autotable loaded from CDN as window.jspdf + window.autoTable
+// SheetJS xlsx loaded from CDN as window.XLSX
+function getJsPDF() {
+  return window.jspdf?.jsPDF || window.jsPDF
+}
+function getAutoTable() {
+  return window.autoTable
+}
+function getXLSX() {
+  return window.XLSX
+}
+
 function formatCurrency(num) {
   return new Intl.NumberFormat('en-BD').format(num || 0)
 }
@@ -136,6 +148,11 @@ export default function Reports() {
       const pc = prev.cash || {}
       const pp = prev.profit || {}
 
+      const jsPDF = getJsPDF()
+      const autoTable = getAutoTable()
+      if (!jsPDF || !autoTable) {
+        throw new Error('PDF libraries not loaded. Please check your internet connection and refresh the page.')
+      }
       const doc = new jsPDF({ unit: 'pt', format: 'a4' })
       const pageW = doc.internal.pageSize.getWidth()
       const margin = 40
@@ -290,6 +307,10 @@ export default function Reports() {
       const pc = prev.cash || {}
       const pp = prev.profit || {}
 
+      const XLSX = getXLSX()
+      if (!XLSX) {
+        throw new Error('Excel library not loaded. Please check your internet connection and refresh the page.')
+      }
       const wb = XLSX.utils.book_new()
 
       // ── Summary sheet ──
