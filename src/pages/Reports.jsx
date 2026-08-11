@@ -551,6 +551,17 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
+      {/* Export error banner */}
+      {exportError && (
+        <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 flex items-start justify-between gap-3">
+          <div>
+            <p className="font-medium">Export failed</p>
+            <p className="text-xs mt-0.5">{exportError}</p>
+          </div>
+          <button onClick={() => setExportError(null)} className="text-red-500 hover:text-red-700 text-xs font-medium">Dismiss</button>
+        </div>
+      )}
+
       {/* Month Navigator */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
@@ -568,7 +579,10 @@ export default function Reports() {
         <div className="flex items-center gap-2">
           <button
             className="btn-secondary btn-sm"
-            onClick={exportPDF}
+            onClick={() => {
+              if (!currentData) return
+              if (window.confirm(`Generate PDF report for ${monthLabel}?`)) exportPDF()
+            }}
             disabled={exporting !== null || !currentData}
             title="Export as PDF"
           >
@@ -591,7 +605,10 @@ export default function Reports() {
           </button>
           <button
             className="btn-secondary btn-sm"
-            onClick={exportExcel}
+            onClick={() => {
+              if (!currentData) return
+              if (window.confirm(`Generate Excel report for ${monthLabel}?`)) exportExcel()
+            }}
             disabled={exporting !== null || !currentData}
             title="Export as Excel"
           >
