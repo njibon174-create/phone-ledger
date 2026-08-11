@@ -3,6 +3,7 @@ import AddPhone from './pages/AddPhone'
 import InventoryList from './pages/InventoryList'
 import SalesList from './pages/SalesList'
 import BakiLedger from './pages/BakiLedger'
+import CashBook from './pages/CashBook'
 
 const NAV = [
   {
@@ -37,6 +38,17 @@ const NAV = [
       </svg>
     ),
     desc: 'Track credit & baki payments',
+  },
+  {
+    id: 'cashbook',
+    label: 'Cash Book',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    ),
+    desc: 'Track cash in & out',
   },
 ]
 
@@ -153,6 +165,7 @@ export default function App() {
                 {activeTab === 'inventory' && 'Manage your phone stock'}
                 {activeTab === 'sales' && 'View all sales history'}
                 {activeTab === 'baki' && 'Track credit payments'}
+                {activeTab === 'cashbook' && 'Track all cash transactions'}
               </p>
             </div>
             {activeTab === 'inventory' && (
@@ -184,6 +197,7 @@ export default function App() {
           {activeTab === 'inventory' && <InventoryList />}
           {activeTab === 'sales' && <SalesList />}
           {activeTab === 'baki' && <BakiLedger />}
+          {activeTab === 'cashbook' && <CashBook />}
         </div>
       </main>
     </div>
