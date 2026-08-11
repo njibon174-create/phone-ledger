@@ -57,9 +57,9 @@ function SkeletonCard() {
 function CreditCard({ credit, onAddPayment }) {
   const [expanded, setExpanded] = useState(false)
 
-  const sale = credit.sale || {}
+  const sale = (credit.sale && typeof credit.sale === 'object') ? credit.sale : {}
   const phone = sale.phone || {}
-  const payments = credit.credit_payments || []
+  const payments = Array.isArray(credit.credit_payments) ? credit.credit_payments : []
 
   const statusCfg = STATUS_CONFIG[credit.status] || STATUS_CONFIG.pending
   const isCleared = credit.status === 'cleared'
@@ -173,6 +173,7 @@ export default function BakiLedger() {
   const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'outstanding' | 'cleared'
   const [addPaymentCredit, setAddPaymentCredit] = useState(null)
   const [toast, setToast] = useState(null)
+  const [fetchError, setFetchError] = useState(null)
 
   const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type })
@@ -212,9 +213,18 @@ export default function BakiLedger() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Fetch credits error:', error)
+      console.error('BakiLedger fetch error:', JSON.stringify(error))
+      setFetchError(error.message)
+      // Try fallback: fetch credits without nested relations
+      const { data: fallback } = await supabase
+        .from('credits')
+        .select('*')
+        .order('created_at', { ascending: false })
+      setCredits(fallback || [])
+    } else {
+      setCredits(data || [])
+      setFetchError(null)
     }
-    setCredits(data || [])
     setLoading(false)
   }
 
@@ -251,6 +261,14 @@ export default function BakiLedger() {
 
   return (
     <div className="space-y-5">
+      {/* Error banner */}
+      {fetchError && (
+        <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-600">
+          <p className="font-medium">Fetch error: {fetchError}</p>
+          <p className="text-xs mt-1">Showing fallback data without buyer/phone details.</p>
+        </div>
+      )}
+
       {/* Toast */}
       {toast && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border ${
