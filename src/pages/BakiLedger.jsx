@@ -4,12 +4,12 @@ import AddPayment from './AddPayment'
 
 const STATUS_CONFIG = {
   pending: {
-    label: 'Pending',
+    label: 'Baki',
     dot: 'bg-amber-400',
     bg: 'bg-amber-50 text-amber-700 border-amber-100',
   },
   partial: {
-    label: 'Partial',
+    label: 'Partial Baki',
     dot: 'bg-blue-400',
     bg: 'bg-blue-50 text-blue-700 border-blue-100',
   },
@@ -181,7 +181,7 @@ export default function BakiLedger() {
 
   async function fetchCredits() {
     setLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('credits')
       .select(`
         id,
@@ -190,14 +190,19 @@ export default function BakiLedger() {
         remaining,
         status,
         last_payment_date,
+        created_at,
         sale:sales(
           id,
           buyer_name,
           buyer_phone,
           sale_date,
-          phone:phones(brand, model, imei)
+          phone:phones(
+            brand,
+            model,
+            imei
+          )
         ),
-        credit_payments:credit_payments(
+        credit_payments(
           id,
           amount,
           payment_date,
@@ -206,16 +211,10 @@ export default function BakiLedger() {
       `)
       .order('created_at', { ascending: false })
 
-    // Fallback: if relationship doesn't work, fetch separately
-    if (!data || data.length === 0) {
-      const { data: creditsData } = await supabase
-        .from('credits')
-        .select('*')
-        .order('last_payment_date', { ascending: false })
-      setCredits(creditsData || [])
-    } else {
-      setCredits(data)
+    if (error) {
+      console.error('Fetch credits error:', error)
     }
+    setCredits(data || [])
     setLoading(false)
   }
 
